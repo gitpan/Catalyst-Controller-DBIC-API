@@ -63,7 +63,14 @@ Forwards to object level methods described in L<Catalyst::Controller::DBIC::API>
 DELETE: forwards to L<Catalyst::Controller::DBIC::API/delete>
 PUT: forwards to L<Catalyst::Controller::DBIC::API/update>
 
-Note: It is often sensible although controversial to give this method a PathPart to clearly distinguish between object and list level methods. You can easily do this by using the controller config as with L</setup>.
+Note: It is often sensible although controversial to give this method a PathPart to clearly distinguish between object and list level methods. You can easily do this by using the controller config as with L</setup>. For example:
+
+  __PACKAGE__->config
+    ( action => { object => { PathPart => 'id', Chained => 'setup' } }, 
+	...
+  );
+
+Would move your object level endpoints to $base/id/[identifier].
 
 =cut 
 
@@ -136,6 +143,10 @@ sub base_GET {
 =head1 AUTHOR
 
   Luke Saunders <luke.saunders@gmail.com>
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
 
 =cut
 

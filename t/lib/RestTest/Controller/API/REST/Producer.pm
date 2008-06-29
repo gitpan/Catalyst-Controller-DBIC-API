@@ -13,4 +13,13 @@ __PACKAGE__->config
       list_returns => ['name']
       );
 
+sub create :Private {
+  my ($self, $c) = @_;
+  $self->NEXT::create($c);
+
+  if ($c->stash->{created_object}) {
+    %{$c->stash->{response}->{new_producer}} = $c->stash->{created_object}->get_columns;
+  }
+}
+
 1;

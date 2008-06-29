@@ -9,7 +9,7 @@ my $base = 'http://localhost';
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -63,5 +63,9 @@ my $producer_create_url = "$base/api/rest/producer";
 	$mech->request($req);
 
 	cmp_ok( $mech->status, '==', 200, 'request with valid content okay' );
-	ok($schema->resultset('Producer')->find({ name => 'king luke' }), 'record created with specified name');
+        my $new_obj = $schema->resultset('Producer')->find({ name => 'king luke' });
+	ok($new_obj, 'record created with specified name');
+
+	my $response = JSON::Syck::Load( $mech->content);
+	is_deeply( $response->{new_producer}, { $new_obj->get_columns }, 'json for new producer returned' );
 }

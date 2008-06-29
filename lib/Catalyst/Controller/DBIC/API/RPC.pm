@@ -24,8 +24,8 @@ By default provides the following endpoints:
 
   $base/create
   $base/list
-  $base/id/[identified]/delete
-  $base/id/[identified]/update
+  $base/id/[identifier]/delete
+  $base/id/[identifier]/update
 
 Where $base is the URI described by L</setup>, the chain root of the controller.
 
@@ -50,7 +50,7 @@ Chained: L</setup>
 PathPart: object
 CaptureArgs: 1
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/object>.
+Provides an chain point to the functionality described in L<Catalyst::Controller::DBIC::API/object>. All object level endpoints should use this as their chain root.
 
 =head2 create
 
@@ -131,6 +131,10 @@ sub delete :Chained('object') :PathPart('delete') :Args(0) {
 =head1 AUTHOR
 
   Luke Saunders <luke.saunders@gmail.com>
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
 
 =cut
 

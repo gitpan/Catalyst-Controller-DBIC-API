@@ -5,11 +5,11 @@ use warnings;
 
 =head1 VERSION
 
-Version 1.000000
+Version 1.000001
 
 =cut
 
-our $VERSION = '1.000000';
+our $VERSION = '1.000001';
 
 =head1 NAME
 
@@ -40,9 +40,9 @@ Easily provide common API endpoints based on your L<DBIx::Class> schema classes.
 
 =head1 GETTING STARTED
 
-This document describes base functionlity such as list, create, delete, update and the setting of config attributes. L<Catalyst::Controller::API::RPC> and L<Catalyst::Controller::API::REST> describe details of provided endpoints to those base methods.
+This document describes base functionlity such as list, create, delete, update and the setting of config attributes. L<Catalyst::Controller::DBIC::API::RPC> and L<Catalyst::Controller::DBIC::API::REST> describe details of provided endpoints to those base methods.
 
-You will need to create a controller for each schema class you require API endpoints for. For example if your schema has Artist and Track, and you want to provide a RESTful interface to these, you should create MyApp::Controller::API::REST::Artist and MyApp::Controller::API::REST::Track which both subclass L<Catalyst::Controller::API::REST>. Similarly if you wanted to provide an RPC style interface then subclass L<Catalyst::Controller::API::RPC>. You then configure these individually as specified in L</CONFIGURATION>.
+You will need to create a controller for each schema class you require API endpoints for. For example if your schema has Artist and Track, and you want to provide a RESTful interface to these, you should create MyApp::Controller::API::REST::Artist and MyApp::Controller::API::REST::Track which both subclass L<Catalyst::Controller::DBIC::API::REST>. Similarly if you wanted to provide an RPC style interface then subclass L<Catalyst::Controller::DBIC::API::RPC>. You then configure these individually as specified in L</CONFIGURATION>.
 
 Also note that the test suite of this module has an example application used to run tests against. It maybe helpful to look at that until a better tutorial is written.
 
@@ -80,7 +80,7 @@ List level methods such as list and create stash the class resultset in the stas
 
 =head1 METHODS
 
-Note: see the individual interface classes - L<Catalyst::Controller::API::RPC> and L<Catalyst::Controller::API::REST> - for details of the endpoints to these abstract methods.
+Note: see the individual interface classes - L<Catalyst::Controller::DBIC::API::RPC> and L<Catalyst::Controller::DBIC::API::REST> - for details of the endpoints to these abstract methods.
 
 =head2 setup
 
@@ -97,7 +97,9 @@ This action is the chain root of the controller. It must either be overridden or
   # or
 
   sub setup :Chained('/api/rpc_base') :CaptureArgs(0) :PathPart('track') {
-	$self->NEXT::setup($c);
+    my ($self, $c) = @_;
+
+    $self->NEXT::setup($c);
   }
 
 This action will populate $c->stash->{$self->rs_stash_key} with $c->model($self->class) for other actions in the chain to use.
@@ -125,7 +127,6 @@ For example, these request parameters:
 Would result in this search (where 'name' is a column of the schema class, 'cd' is a relation of the schema class and 'artist' is a column of the related class):
 
  $rs->search({ name => 'fred', 'cd.artist' => 'luke' }, { join => ['cd'] })
-=head1 AUTHOR
 
 The L</format_list> method is used to format the results, so override that as required.
 
@@ -153,15 +154,45 @@ Then the contents of $c->stash->{response} are serialized using L<Catalyst::Acti
 
 =head1 EXTENDING
 
-By default the create, delete and update actions will not return anything apart from the success parameter set in L</end>, often this is not ideal but the required behaviour varies from application to application. So normally it's sensible to write an intermediate class which your main controller classes subclass from.
+By default the create, delete and update actions will not return anything apart from the success parameter set in L</end>, often this is not ideal but the required behaviour varies from application to application. So normally it's sensible to write an intermediate class which your main controller classes subclass from. For example if you wanted create to return the JSON for the newly created object you might have something like:
+
+  package MyApp::ControllerBase::DBIC::API::RPC;
+  ...
+  use base qw/Catalyst::Controller::DBIC::API::RPC/;
+  ...
+  sub create :Chained('setup') :Args(0) :PathPart('create') {
+    my ($self, $c) = @_;
+
+    # will set $c->stash->{created_object} if successful
+    $self->NEXT::create($c);
+
+    if ($c->stash->{created_object}) {    
+      # $c->stash->{response} will be serialized in the end action
+      %{$c->stash->{response}->{new_object}} = $c->stash->{created_object}->get_columns;
+    }
+  }
+
+
+  package MyApp::Controller::API::RPC::Track;
+  ...
+  use base qw/MyApp::ControllerBase::DBIC::API::RPC/;
+  ...
+
+If you were using the RPC style. For REST the only difference besides the class names would be that create should be :Private rather than an endpoint.
+
+Similarly you might want create, update and delete to all forward to the list action once they are done so you can refresh your view. This should also be simple enough.
 
 =head1 AUTHOR
 
-  Luke Saunders <luke.saunders@gmail.com
->
+  Luke Saunders <luke.saunders@gmail.com>
+
 =head1 CONTRIBUTORS
-  
+
   Zbigniew Lukasiak <zzbbyy@gmail.com>
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
 
 =cut
 

@@ -80,7 +80,7 @@ sub create :Private {
 	}
 
 	my $empty_object = $c->stash->{$self->rs_stash_key}->new_result({});
-	$self->validate_and_save_object($c, $empty_object);
+	$c->stash->{created_object} = $self->validate_and_save_object($c, $empty_object);
 }
 
 sub update :Private {
@@ -119,7 +119,7 @@ sub validate_and_save_object {
 		return;
 	}
 
-	$self->save_object($c, $object, $params);
+	return $self->save_object($c, $object, $params);
 }
 
 sub validate {
@@ -209,6 +209,7 @@ sub save_object {
 		$object->set_columns($params);
 		$object->insert;
 	}
+  return $object;
 }
 
 sub end :Private {

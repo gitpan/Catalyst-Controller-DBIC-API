@@ -1,6 +1,6 @@
 --- 
 abstract: ~
-author: The L</format_list> method is used to format the results, so override that as required.
+author: Luke Saunders <luke.saunders@gmail.com>
 build_requires: 
   Catalyst::Model::DBIC::Schema: 0.2
   Test::More: 0.7
@@ -24,4 +24,4 @@ requires:
   DBIx::Class: 0.08
   perl: 5.6.1
 tests: t/rest/*.t t/rpc/*.t
-version: 1.000000
+version: 1.000001
