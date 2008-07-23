@@ -22,10 +22,12 @@ t/lib/RestTest.pm
 t/lib/RestTest/Controller/API.pm
 t/lib/RestTest/Controller/API/REST.pm
 t/lib/RestTest/Controller/API/REST/Artist.pm
+t/lib/RestTest/Controller/API/REST/BoundArtist.pm
 t/lib/RestTest/Controller/API/REST/CD.pm
 t/lib/RestTest/Controller/API/REST/Producer.pm
 t/lib/RestTest/Controller/API/REST/Track.pm
 t/lib/RestTest/Controller/API/RPC.pm
+t/lib/RestTest/Controller/API/RPC/Any.pm
 t/lib/RestTest/Controller/API/RPC/Artist.pm
 t/lib/RestTest/Controller/API/RPC/CD.pm
 t/lib/RestTest/Controller/API/RPC/Producer.pm

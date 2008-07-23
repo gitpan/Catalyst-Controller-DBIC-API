@@ -10,7 +10,7 @@ my $content_type = [ 'Content-Type', 'application/x-www-form-urlencoded' ];
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 21;
+use Test::More tests => 23;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -22,6 +22,7 @@ my $track = $schema->resultset('Track')->first;
 my %original_cols = $track->get_columns;
 
 my $track_update_url = "$base/api/rpc/track/id/" . $track->id . "/update";
+my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update";
 
 # test invalid track id caught
 {
@@ -105,4 +106,15 @@ my $track_update_url = "$base/api/rpc/track/id/" . $track->id . "/update";
   $track->discard_changes;
   is($track->title, 'sheep sheep', 'Title changed');
   is($track->cd->year, '2009', 'Related field changed"');
+}
+
+{
+  my $req = POST( $any_track_update_url, {
+	  title => 'baa'
+  });
+  $mech->request($req, $content_type);
+  cmp_ok( $mech->status, '==', 200, 'Stash update okay' );
+
+  $track->discard_changes;
+  is($track->title, 'baa', 'Title changed');
 }

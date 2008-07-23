@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -19,6 +19,7 @@ my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
 
 my $artist_list_url = "$base/api/rest/artist";
+my $filtered_artist_list_url = "$base/api/rest/bound_artist";
 my $producer_list_url = "$base/api/rest/producer";
 
 # test open request
@@ -92,4 +93,15 @@ my $producer_list_url = "$base/api/rest/producer";
   my $response = JSON::Syck::Load( $mech->content);
 #  use Data::Dumper; warn Dumper($response, \@expected_response);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with list_returns specified' );
+}
+
+{
+  my $uri = URI->new( $filtered_artist_list_url );
+  $uri->query_form({ 'search.artistid' => '2' });	
+  my $req = GET( $uri, 'Accept' => 'text/x-json' );
+  $mech->request($req);
+  cmp_ok( $mech->status, '==', 200, 'search related request okay' );
+  my $response = JSON::Syck::Load( $mech->content);
+  my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ 'artistid' => '1' })->all;
+  is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with setup_list_method specified' );
 }

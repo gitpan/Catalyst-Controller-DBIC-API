@@ -9,7 +9,7 @@ Version 1.000001
 
 =cut
 
-our $VERSION = '1.000001';
+our $VERSION = '1.001000';
 
 =head1 NAME
 
@@ -50,6 +50,25 @@ Also note that the test suite of this module has an example application used to 
 
 Each of your controller classes needs to be configured to point at the relevant schema class, specify what can be updated and so on, as shown in the L</SYNOPSIS>.
 
+The class, create_requires, create_allows and update_requires parameters can also be set in the stash like so:
+
+  sub setup :Chained('/api/rpc/rpc_base') :CaptureArgs(1) :PathPart('any') {
+    my ($self, $c, $object_type) = @_;
+
+    if ($object_type eq 'artist') {
+      $c->stash->{class} = 'MyAppDB::Artist';
+      $c->stash->{create_requires} = [qw/name/];
+      $c->stash->{update_allows} = [qw/name/];
+    } else {
+      $self->push_error($c, { message => "invalid object_type" });
+      return;
+    }
+
+    $self->NEXT::setup($c);
+  }
+
+Generally it's better to have one controller for each DBIC source with the config hardcoded, but in some cases this isn't possible.
+
 =head2 class
 
 Whatever you would pass to $c->model to get a resultset for this class. MyAppDB::Track for example.
@@ -68,7 +87,19 @@ Arrayref listing columns that update will allow. Columns passed to update that a
 
 =head2 list_returns
 
-Arrayref listing columns that L</list> will return. Leave blank to return all columns.
+Arguments to pass to L<DBIx::Class::ResultSet/select> when performing search for L</list>.
+
+=head2 list_grouped_by
+
+Arguments to pass to L<DBIx::Class::ResultSet/group_by> when performing search for L</list>.
+
+=head2 list_ordered_by
+
+Arguments to pass to L<DBIx::Class::ResultSet/order_by> when performing search for L</list>.
+
+=head2 list_count
+
+Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
 =head2 object_stash_key
 
@@ -77,6 +108,23 @@ Object level methods such as delete and update stash the object in the stash. Sp
 =head2 rs_stash_key
 
 List level methods such as list and create stash the class resultset in the stash. Specify the stash key you would like to use here. Defaults to 'class_rs'.
+
+=head2 setup_list_method
+
+If you need to process the incoming parameters (for validation, access control,
+etc) you can configure an action to forward to.  This is called before the
+search is handed off to DBIC, so you can process the incoming request
+parameters, or add your own filters.  Below is an example of basic usage:
+
+  __PACKAGE__->config(
+      ...,
+      setup_list_method => 'filter_search_params'
+  );
+
+  sub filter_search_params : Private {
+      my ( $self, $c, $query ) = @_;
+      $query->{search}->{'user_id'} = $c->user->id;
+  }
 
 =head1 METHODS
 
@@ -116,7 +164,7 @@ Does not populate the response with any additional information.
 
 =head2 list
 
-List level action chained from L</setup>. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the class resultset. If the </list_returns> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned.
+List level action chained from L</setup>. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the class resultset. If the L</list_returns> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</list_count>, L</list_grouped_by> and L</list_ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if list_returns, list_count, list_ordered_by or list_grouped_by request parameters are present then these will override the values set on the class.
 
 If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. L</CGI::Expand> is used to expand the request parameters into a structure and then $c->req->params->{search} is used as the search condition.
 
@@ -187,6 +235,8 @@ Similarly you might want create, update and delete to all forward to the list ac
   Luke Saunders <luke.saunders@gmail.com>
 
 =head1 CONTRIBUTORS
+
+  J. Shirley <jshirley@gmail.com>
 
   Zbigniew Lukasiak <zzbbyy@gmail.com>
 

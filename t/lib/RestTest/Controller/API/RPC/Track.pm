@@ -10,7 +10,10 @@ __PACKAGE__->config
       class => 'RestTestDB::Track',
       create_requires => ['cd', 'title' ],
       create_allows => ['cd', 'title', 'position' ],
-      update_allows => ['title', 'position', { cd => ['*'] }]
+      update_allows => ['title', 'position', { cd => ['*'] }],
+      list_grouped_by => ['position'],
+      list_returns => ['position'],
+      list_ordered_by => ['position']
       );
 
 1;

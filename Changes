@@ -1,5 +1,14 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.001000
+- Added setup_list_method configuration flag (jshirley)
+- Added support for setting config params in stash
+- Added list_grouped_by, list_count and list_ordered_by config attributes
+- Fixed bug with behaviour of list_returns
+
+1.000002
+- Fixed lack of deserialization under RPC
+
 1.000001
 - Improved docs
 
