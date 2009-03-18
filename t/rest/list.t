@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More tests => 15;
+use Test::More tests => 13;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -29,22 +29,9 @@ my $producer_list_url = "$base/api/rest/producer";
   }, 'Accept' => 'text/x-json' );
   $mech->request($req);
   cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
-
   my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->all;
   my $response = JSON::Syck::Load( $mech->content);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
-}
-
-{
-  my $uri = URI->new( $artist_list_url );
-  $uri->query_form({ 'search.artistid' => 1 });
-  my $req = GET( $uri, 'Accept' => 'text/x-json' );
-  $mech->request($req);
-  cmp_ok( $mech->status, '==', 200, 'attempt with basic search okay' );
-
-  my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ artistid => 1 })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned' );
 }
 
 {

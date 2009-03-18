@@ -1,5 +1,15 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.002000
+- Better error handing when unable to parse search arg
+- Added setup_dbic_args_method config option
+- Added list_search_exposes config option
+- Removed duplicate tests in t/rpc/list.t and t/rest/list.t
+- Fixed searches on columns which have a rel with the same name
+  and vice versa
+- Added search by json
+- Added pagination support
+
 1.001000
 - Added setup_list_method configuration flag (jshirley)
 - Added support for setting config params in stash

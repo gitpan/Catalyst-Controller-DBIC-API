@@ -1,5 +1,5 @@
 package # hide from PAUSE 
-    RestTest::Schema::Producer;
+    RestTest::Schema::Result::Producer;
 
 use base 'DBIx::Class::Core';
 

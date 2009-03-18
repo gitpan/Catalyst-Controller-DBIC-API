@@ -94,6 +94,7 @@ sub object :Chained('setup') :Args(1) :PathPart('') :ActionClass('REST') {
 	my $object = $c->stash->{$self->rs_stash_key}->find( $id );
 	unless ($object) {
 		$self->push_error($c, { message => "Invalid id" });
+		$c->detach; # no point continuing
 	}
 	$c->stash->{$self->object_stash_key} = $object;
 }

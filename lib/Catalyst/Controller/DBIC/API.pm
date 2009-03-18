@@ -5,11 +5,11 @@ use warnings;
 
 =head1 VERSION
 
-Version 1.000001
+Version 1.002000
 
 =cut
 
-our $VERSION = '1.001000';
+our $VERSION = '1.002000';
 
 =head1 NAME
 
@@ -25,7 +25,11 @@ Catalyst::Controller::DBIC::API
       class => 'MyAppDB::Artist', # DBIC schema class
       create_requires => ['name', 'age'], # columns required to create
       create_allows => ['nickname'], # additional non-required columns that create allows
-      update_allows => ['name', 'age', 'nickname'] # columns that update allows
+      update_allows => ['name', 'age', 'nickname'], # columns that update allows
+      update_allows => ['name', 'age', 'nickname'], # columns that update allows
+      list_returns => [qw/name age/], # columns that list returns
+      list_ordered_by => [qw/age/], # order of generated list
+      list_search_exposes => [qw/age nickname/, { cd => [qw/title year/] }], # columns that can be searched on via list
       );
 
   # Provides the following functional endpoints:
@@ -36,7 +40,7 @@ Catalyst::Controller::DBIC::API
 
 =head1 DESCRIPTION
 
-Easily provide common API endpoints based on your L<DBIx::Class> schema classes. Module provides both RPC and REST interfaces to base functionality. Uses L<Catalyst::Action::Serialise> and L<Catalyst::Action::Deserialise> to serialise response and/or deserialise request.
+Easily provide common API endpoints based on your L<DBIx::Class> schema classes. Module provides both RPC and REST interfaces to base functionality. Uses L<Catalyst::Action::Serialize> and L<Catalyst::Action::Deserialize> to serialise response and/or deserialise request.
 
 =head1 GETTING STARTED
 
@@ -97,7 +101,46 @@ Arguments to pass to L<DBIx::Class::ResultSet/group_by> when performing search f
 
 Arguments to pass to L<DBIx::Class::ResultSet/order_by> when performing search for L</list>.
 
+=head2 list_search_exposes
+
+Columns and related columns that are okay to search on. For example if only the position column and all cd columns were to be allowed
+
+ list_search_exposes => [qw/position/, { cd => ['*'] }]
+
+
+You can also use this to allow custom columns should you wish to allow them through in order to be caught by a custom resultset. For example:
+
+  package RestTest::Controller::API::RPC::TrackExposed;
+  
+  ...
+  
+  __PACKAGE__->config
+    ( ...,
+      list_search_exposes => [qw/position title custom_column/],
+      );
+
+and then in your custom resultset:
+
+  package RestTest::Schema::ResultSet::Track;
+  
+  use base 'RestTest::Schema::ResultSet';
+  
+  sub search {
+    my $self = shift;
+    my ($clause, $params) = @_;
+
+    # test custom attrs
+    if (my $pretend = delete $clause->{custom_column}) {
+      $clause->{'cd.year'} = $pretend;
+    }
+    my $rs = $self->SUPER::search(@_);
+  }
+
 =head2 list_count
+
+Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
+
+=head2 list_page
 
 Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
@@ -108,6 +151,26 @@ Object level methods such as delete and update stash the object in the stash. Sp
 =head2 rs_stash_key
 
 List level methods such as list and create stash the class resultset in the stash. Specify the stash key you would like to use here. Defaults to 'class_rs'.
+
+=head2 setup_dbic_args_method
+
+This hook will allow you to alter the parameters before they are passed to $rs->search. 
+Here you can add additional attributes or alter the generated query. 
+
+Note that the method is passed ($self, $c, $params, $attrs) and must return [$params, $attrs]. Below is an example of basic usage:
+
+  __PACKAGE__->config(
+      ...,
+      setup_dbic_args_method => 'setup_dbic_args'
+  );
+
+  sub setup_dbic_args : Private {
+	  my ($self, $c, $params, $args) = @_;
+
+    # we only ever want to show items with position greater than 1
+	  $params->{position} = { '!=' => '1' };
+	  return [$params, $args];
+  }
 
 =head2 setup_list_method
 
@@ -164,17 +227,27 @@ Does not populate the response with any additional information.
 
 =head2 list
 
-List level action chained from L</setup>. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the class resultset. If the L</list_returns> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</list_count>, L</list_grouped_by> and L</list_ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if list_returns, list_count, list_ordered_by or list_grouped_by request parameters are present then these will override the values set on the class.
+List level action chained from L</setup>. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the class resultset. If the L</list_returns> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</list_count>, L</list_page>, L</list_grouped_by> and L</list_ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if list_returns, list_count, list_ordered_by or list_grouped_by request parameters are present then these will override the values set on the class.
 
-If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. L</CGI::Expand> is used to expand the request parameters into a structure and then $c->req->params->{search} is used as the search condition.
+If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. You can use a JSON string as the 'search' parameter for maximum flexibility or use L</CGI::Expand> syntax. In the second case the request parameters are expanded into a structure and then $c->req->params->{search} is used as the search condition.
 
 For example, these request parameters:
 
  ?search.name=fred&search.cd.artist=luke
+ OR
+ ?search='{"name":"fred","cd": {"artist":"luke"}}'
 
 Would result in this search (where 'name' is a column of the schema class, 'cd' is a relation of the schema class and 'artist' is a column of the related class):
 
  $rs->search({ name => 'fred', 'cd.artist' => 'luke' }, { join => ['cd'] })
+
+Note that if pagination is needed, this can be achieved using a combination of the L</list_count> and L</list_page> parameters. For example:
+
+  ?list_page=2&list_count=20
+
+Would result in this search:
+ 
+ $rs->search({}, { page => 2, rows => 20 })
 
 The L</format_list> method is used to format the results, so override that as required.
 
@@ -239,6 +312,14 @@ Similarly you might want create, update and delete to all forward to the list ac
   J. Shirley <jshirley@gmail.com>
 
   Zbigniew Lukasiak <zzbbyy@gmail.com>
+
+  Alexander Hartmaier <alex_hartmaier@hotmail.com>
+
+=head1 SPECIAL THANKS
+
+This module was inspired by code written by Matt S Trout (mst) when we worked on a project together. In subsequent projects
+I found myself reproducing this design until eventually I decided to CPAN it. None of the original code remains, but the 
+idea is basically the same.
 
 =head1 LICENSE
 

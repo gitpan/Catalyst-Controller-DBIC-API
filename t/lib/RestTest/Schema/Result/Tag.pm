@@ -1,5 +1,5 @@
 package # hide from PAUSE 
-    RestTest::Schema::Tag;
+    RestTest::Schema::Result::Tag;
 
 use base qw/DBIx::Class::Core/;
 
@@ -19,6 +19,6 @@ __PACKAGE__->add_columns(
 );
 __PACKAGE__->set_primary_key('tagid');
 
-__PACKAGE__->belongs_to( cd => 'RestTest::Schema::CD' );
+__PACKAGE__->belongs_to( cd => 'RestTest::Schema::Result::CD' );
 
 1;

@@ -1,5 +1,5 @@
 package # hide from PAUSE 
-    RestTest::Schema::CD_to_Producer;
+    RestTest::Schema::Result::CD_to_Producer;
 
 use base 'DBIx::Class::Core';
 
@@ -11,12 +11,12 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key(qw/cd producer/);
 
 __PACKAGE__->belongs_to(
-  'cd', 'RestTest::Schema::CD',
+  'cd', 'RestTest::Schema::Result::CD',
   { 'foreign.cdid' => 'self.cd' }
 );
 
 __PACKAGE__->belongs_to(
-  'producer', 'RestTest::Schema::Producer',
+  'producer', 'RestTest::Schema::Result::Producer',
   { 'foreign.producerid' => 'self.producer' }
 );
 

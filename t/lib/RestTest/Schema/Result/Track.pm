@@ -1,5 +1,5 @@
 package # hide from PAUSE 
-    RestTest::Schema::Track;
+    RestTest::Schema::Result::Track;
 
 use base 'DBIx::Class::Core';
 __PACKAGE__->table('track');
@@ -31,6 +31,6 @@ __PACKAGE__->set_primary_key('trackid');
 __PACKAGE__->add_unique_constraint([ qw/cd position/ ]);
 __PACKAGE__->add_unique_constraint([ qw/cd title/ ]);
 
-__PACKAGE__->belongs_to( cd => 'RestTest::Schema::CD');
+__PACKAGE__->belongs_to( cd => 'RestTest::Schema::Result::CD');
 
 1;

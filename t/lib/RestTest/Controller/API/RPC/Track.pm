@@ -13,7 +13,8 @@ __PACKAGE__->config
       update_allows => ['title', 'position', { cd => ['*'] }],
       list_grouped_by => ['position'],
       list_returns => ['position'],
-      list_ordered_by => ['position']
+      list_ordered_by => ['position'],
+			list_search_allows => ['title']
       );
 
 1;

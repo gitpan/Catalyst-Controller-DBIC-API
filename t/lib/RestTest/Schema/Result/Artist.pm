@@ -1,5 +1,5 @@
 package # hide from PAUSE 
-    RestTest::Schema::Artist;
+    RestTest::Schema::Result::Artist;
 
 use base 'DBIx::Class::Core';
 
@@ -18,7 +18,7 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key('artistid');
 
 __PACKAGE__->has_many(
-    cds => 'RestTest::Schema::CD', undef,
+    cds => 'RestTest::Schema::Result::CD', undef,
     { order_by => 'year' },
 );
 
