@@ -74,14 +74,6 @@ Would move your object level endpoints to $base/id/[identifier].
 
 =cut 
 
-sub begin :Private {
-	my ($self, $c) = @_;
-
-	$c->forward('deserialize');
-	$c->req->params($c->req->data);
-	$self->NEXT::begin($c);	
-}
-
 # from Catalyst::Action::Serialize
 sub deserialize :ActionClass('Deserialize') {
 	my ($self, $c) = @_;

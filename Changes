@@ -1,5 +1,8 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.002001
+- Minor change to make this module work with Catalyst::Runtime 5.80
+
 1.002000
 - Better error handing when unable to parse search arg
 - Added setup_dbic_args_method config option

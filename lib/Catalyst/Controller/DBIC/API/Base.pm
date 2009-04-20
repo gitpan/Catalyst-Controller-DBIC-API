@@ -27,6 +27,16 @@ __PACKAGE__->config(
 	rs_stash_key => 'class_rs'
 );
 
+sub begin :Private {
+	my ($self, $c) = @_;
+
+	$c->forward('deserialize');
+	if ($c->req->data) {
+		$c->req->params($c->req->data);
+	}
+	$self->NEXT::begin($c);	
+}
+
 sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config') {
 	my ($self, $c) = @_;
 
