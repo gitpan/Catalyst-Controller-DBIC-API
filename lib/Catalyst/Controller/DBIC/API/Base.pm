@@ -7,10 +7,17 @@ use base qw/Catalyst::Controller CGI::Expand/;
 
 use DBIx::Class::ResultClass::HashRefInflator;
 use JSON::Any;
+use Test::Deep::NoTest;
 
-__PACKAGE__->mk_accessors(qw(
-															class create_requires update_requires update_allows $self->rs_stash_key create_allows list_count list_returns list_grouped_by list_search_exposes list_ordered_by rs_stash_key object_stash_key setup_list_method setup_dbic_args_method
-													));
+__PACKAGE__->mk_accessors(qw/
+    class create_requires
+    update_requires update_allows
+    create_allows
+    list_count list_returns list_prefetch list_prefetch_allows
+    list_grouped_by list_search_exposes list_ordered_by
+    rs_stash_key object_stash_key
+    setup_list_method setup_dbic_args_method
+/);
 
 __PACKAGE__->config(
 	class => undef,
@@ -19,6 +26,8 @@ __PACKAGE__->config(
 	update_requires => [],
 	update_allows => [],
 	list_returns => [],
+	list_prefetch => undef,
+	list_prefetch_allows => [],
 	list_grouped_by => [],
 	list_search_exposes => [],
 	list_ordered_by => [],
@@ -27,25 +36,36 @@ __PACKAGE__->config(
 	rs_stash_key => 'class_rs'
 );
 
-sub begin :Private {
-	my ($self, $c) = @_;
-
-	$c->forward('deserialize');
-	if ($c->req->data) {
-		$c->req->params($c->req->data);
-	}
-	$self->NEXT::begin($c);	
-}
-
 sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config') {
 	my ($self, $c) = @_;
 
 	$c->stash->{$self->rs_stash_key} = $c->model($self->class);
 }
 
+# from Catalyst::Action::Serialize
+sub deserialize :ActionClass('Deserialize') {
+	my ($self, $c) = @_;
+
+	my $req_params;
+	if ($c->req->data) {
+		$req_params = $c->req->data;
+	} else {
+		$req_params = $self->expand_hash($c->req->params);
+		foreach my $param (qw/search list_count list_ordered_by list_grouped_by list_prefetch/) {
+			# these params can also be composed of JSON
+			eval {
+				my $deserialized = JSON::Any->from_json($req_params->{$param});
+				$req_params->{$param} = $deserialized;
+			};
+		}
+	}
+	$c->stash->{_dbic_api}->{req_params} = $req_params;
+}
+
 sub list :Private {
 	my ($self, $c) = @_;
 
+	return if $self->get_errors($c);
 	my $ret = $c->forward('generate_dbic_search_args');
 	return unless ($ret && ref $ret);
 	my ($params, $args) = @{$ret};
@@ -57,17 +77,22 @@ sub list :Private {
 
 sub generate_dbic_search_args :Private {
 	my ($self, $c) = @_;
-
-	my $req_params = (grep { ref $_ } values %{$c->req->params}) ? $c->req->params : $self->expand_hash($c->req->params);
-	# if expand_hash didn't do anything, try json
-	unless (exists $req_params->{search} && ref $req_params->{search} eq 'HASH') {
-		eval {
-			$req_params->{search} = exists $c->req->params->{search} ? JSON::Any->from_json($c->req->params->{search}) : undef;
-		};
-		if ($@) {
-			# json didn't work either. looks like it's screwed.
-			$self->push_error($c, { message => "can not parse search arg" });
-			return;
+  
+	my $args = {};
+	my $req_params = $c->stash->{_dbic_api}->{req_params};
+	my $prefetch = $req_params->{list_prefetch} || $self->list_prefetch || undef;
+	if ($prefetch) {
+		$prefetch = [$prefetch] unless ref $prefetch;
+		# validate the prefetch param against list_prefetch_allows
+		foreach my $prefetch_allows (@{$self->list_prefetch_allows}) {
+			if (eq_deeply($prefetch, $prefetch_allows)) {
+				$args->{prefetch} = $prefetch;
+				# stop looking for a valid prefetch param
+				last;
+			}
+		}
+		unless (exists $args->{prefetch}) {
+			$self->push_error($c, { message => "prefetch validation failed" });
 		}
 	}
 
@@ -82,8 +107,12 @@ sub generate_dbic_search_args :Private {
 	my $source = $c->stash->{$self->rs_stash_key}->result_source;
 
 	my ($params, $join);
-	my $args = {};
-	
+
+	if ($req_params->{search} && !ref $req_params->{search}) {
+		$self->push_error($c, { message => "can not parse search arg" });
+		return;
+	}
+
 	($params, $join) = $self->_format_search($c, { params => $req_params->{search}, source => $source }) if ($req_params->{search});
 
 	$args->{group_by} = $req_params->{list_grouped_by} || ((scalar(@{$self->list_grouped_by})) ? $self->list_grouped_by : undef);
@@ -109,15 +138,15 @@ sub generate_dbic_search_args :Private {
 		$args->{select} = [map { ($_ =~ m/\./) ? $_ : "me.$_" } (ref $args->{select}) ? @{$args->{select}} : $args->{select}];
 	}
 	$args->{join} = $join;
-	if ( my $a = $self->setup_dbic_args_method ) {
-		my $format_action = $self->action_for($a);
+	if ( my $action = $self->setup_dbic_args_method ) {
+		my $format_action = $self->action_for($action);
 		if ( defined $format_action ) {
 			($params, $args) = @{$c->forward("/$format_action", [ $params, $args ])};
 		} else {
 			$c->log->error("setup_dbic_args_method was configured, but action $a not found");
 		}
 	}
-
+	
 	return [$params, $args];
 }
 
@@ -213,9 +242,8 @@ sub update :Private {
 	my ($self, $c) = @_;
 
 	# expand params unless they have already been expanded
-	my $req_params = (grep { ref $_ } values %{$c->req->params}) ? $c->req->params : $self->expand_hash($c->req->params);
+	my $req_params = $c->stash->{_dbic_api}->{req_params};
 
-	$c->req->params($req_params);
 	die "no object to update (looking at " . $self->object_stash_key . ")"
 		unless ( defined $c->stash->{$self->object_stash_key} );
 
@@ -226,7 +254,6 @@ sub update :Private {
 		die "class resultset not set";
 	}
 
-	#	use Data::Dumper; $c->log->debug(Dumper(\%create_args));
 	my $object = $c->stash->{$self->object_stash_key};
 	$self->validate_and_save_object($c, $object);
 }
@@ -246,7 +273,7 @@ sub validate_and_save_object {
 			if $c->debug;
 		return;
 	}
-
+#	use Data::Dumper; warn Dumper($params);
 	if ( $c->debug ) {
 		$c->log->debug("Saving object: $object");
 		$c->log->_dump( $params );
@@ -256,7 +283,7 @@ sub validate_and_save_object {
 
 sub validate {
 	my ($self, $c, $object) = @_;
-	my $params = $c->req->params;
+	my $params = $c->stash->{_dbic_api}->{req_params};
 
 	my %values;
 	my %requires_map = map { $_ => 1 } @{($object->in_storage) ? [] : $c->stash->{create_requires} || $self->create_requires};
@@ -271,9 +298,8 @@ sub validate {
 				$self->push_error($c, { message => "${key} is not a valid relation" });
 				next;
 			}
-		   
-			my $related_params = $params->{$key};
 
+			my $related_params = $params->{$key};
 			# it's an error for $c->req->params->{$key} to be defined but not be an array
 			unless (ref $related_params) {
 				unless (!defined $related_params) {

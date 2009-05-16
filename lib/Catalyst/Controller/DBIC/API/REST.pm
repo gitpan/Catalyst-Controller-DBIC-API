@@ -74,10 +74,10 @@ Would move your object level endpoints to $base/id/[identifier].
 
 =cut 
 
-# from Catalyst::Action::Serialize
-sub deserialize :ActionClass('Deserialize') {
+sub begin :Private {
 	my ($self, $c) = @_;
 
+	$c->forward('deserialize');
 }
 
 sub object :Chained('setup') :Args(1) :PathPart('') :ActionClass('REST') {

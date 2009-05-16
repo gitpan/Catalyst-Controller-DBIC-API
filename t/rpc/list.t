@@ -60,6 +60,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for complex query' );
 }
 
+exit;
 {
 	my $uri = URI->new( $producer_list_url );
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
@@ -193,19 +194,6 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $response = JSON::Syck::Load( $mech->content);
 	#use Data::Dumper; warn Dumper($response, \@expected_response);
 	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on column with same name rel' );
-}
-
-{
-	my $uri = URI->new( $cd_list_url );
-	$uri->query_form({ 'search.artist.artistid' => 1 });
-	my $req = GET( $uri, 'Accept' => 'text/x-json' );
-	$mech->request($req);
-	cmp_ok( $mech->status, '==', 200, 'search on rel column with same name fk request okay' );
-
-	my @expected_response = map { { $_->get_columns } } $schema->resultset('CD')->search({'artist.artistid' => 1}, { join => 'artist' })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on rel column with same name rel fk' );
 }
 
 {

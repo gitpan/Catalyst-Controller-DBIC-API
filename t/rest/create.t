@@ -61,9 +61,8 @@ my $producer_create_url = "$base/api/rest/producer";
 						 );
 	$req->content( $test_data );
 	$mech->request($req);
-
 	cmp_ok( $mech->status, '==', 200, 'request with valid content okay' );
-        my $new_obj = $schema->resultset('Producer')->find({ name => 'king luke' });
+	my $new_obj = $schema->resultset('Producer')->find({ name => 'king luke' });
 	ok($new_obj, 'record created with specified name');
 
 	my $response = JSON::Syck::Load( $mech->content);

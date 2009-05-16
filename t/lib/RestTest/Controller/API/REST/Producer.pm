@@ -15,7 +15,7 @@ __PACKAGE__->config
 
 sub create :Private {
   my ($self, $c) = @_;
-  $self->NEXT::create($c);
+  $self->next::method($c);
 
   if ($c->stash->{created_object}) {
     %{$c->stash->{response}->{new_producer}} = $c->stash->{created_object}->get_columns;

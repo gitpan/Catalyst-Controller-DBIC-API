@@ -86,10 +86,11 @@ Provides an endpoint to the functionality described in L<Catalyst::Controller::D
 
 =cut 
 
-# from Catalyst::Action::Serialize
-sub deserialize :ActionClass('Deserialize') {
+sub begin :Private {
 	my ($self, $c) = @_;
 
+	$c->forward('deserialize');
+	$c->req->params($c->req->data);
 }
 
 sub object :Chained('setup') :CaptureArgs(1) :PathPart('id') {

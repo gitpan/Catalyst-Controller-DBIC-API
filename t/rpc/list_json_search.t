@@ -32,7 +32,6 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
 	is_deeply( { messages => ['can not parse search arg'], success => 'false' }, $response, 'correct data returned for gibberish in search' );
 }
 
-
 {
 	my $uri = URI->new( $artist_list_url );
 	$uri->query_form({ 'search' => '{"name":{"LIKE":"%waul%"}}' });

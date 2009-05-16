@@ -10,7 +10,8 @@ __PACKAGE__->config
       class => 'RestTestDB::Artist',
       create_requires => ['name'],
       create_allows => ['name'],
-      update_allows => ['name']
+      update_allows => ['name'],
+      list_prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
       );
 
 1;

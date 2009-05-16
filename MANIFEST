@@ -54,6 +54,7 @@ t/rpc/create.t
 t/rpc/delete.t
 t/rpc/list.t
 t/rpc/list_json_search.t
+t/rpc/list_prefetch.t
 t/rpc/list_search_allows.t
 t/rpc/setup_dbic_args.t
 t/rpc/update.t

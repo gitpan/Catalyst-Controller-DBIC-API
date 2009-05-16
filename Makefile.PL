@@ -1,4 +1,4 @@
-use inc::Module::Install 0.67;
+use inc::Module::Install 0.87;
 
 name     'Catalyst-Controller-DBIC-API';
 perl_version '5.006001';
@@ -9,6 +9,7 @@ requires 'Catalyst::Runtime' => 5.7010;
 requires 'Catalyst::Action::REST' => 0.60;
 requires 'CGI::Expand' => 2.02;
 requires 'JSON::Any' => 1.19;
+requires 'Test::Deep' => 0.104;
 
 build_requires 'Test::More'       => 0.7;
 build_requires 'Catalyst::Model::DBIC::Schema' => 0.20;

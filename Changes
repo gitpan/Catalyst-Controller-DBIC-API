@@ -1,7 +1,9 @@
 Revision history for Catalyst-Controller-DBIC-API
 
-1.002001
-- Minor change to make this module work with Catalyst::Runtime 5.80
+1.003000
+- Added prefetch support
+- Refactored to ensure all request params accept JSON, CGI::Expand or standard params
+- Doc improvements
 
 1.002000
 - Better error handing when unable to parse search arg
