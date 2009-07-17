@@ -10,7 +10,7 @@ my $content_type = [ 'Content-Type', 'application/x-www-form-urlencoded' ];
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 23;
+use Test::More tests => 25;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -117,4 +117,15 @@ my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update
 
   $track->discard_changes;
   is($track->title, 'baa', 'Title changed');
+}
+
+{
+  my $req = POST( $any_track_update_url, {
+	  position => '14'
+  });
+  $mech->request($req, $content_type);
+  cmp_ok( $mech->status, '==', 200, 'Position update okay' );
+
+  $track->discard_changes;
+  is($track->get_column('position'), '14', 'Position changed');
 }

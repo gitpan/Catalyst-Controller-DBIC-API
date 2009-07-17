@@ -22,4 +22,6 @@ auto_provides;
 
 auto_install;
 
+resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/1.003/trunk/';
+
 WriteAll;

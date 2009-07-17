@@ -1,5 +1,8 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.003001
+- Minor fix to prevent failing test
+
 1.003000
 - Added prefetch support
 - Refactored to ensure all request params accept JSON, CGI::Expand or standard params

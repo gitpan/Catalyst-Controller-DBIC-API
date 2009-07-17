@@ -7,10 +7,12 @@ sub search {
 	my $self = shift;
 	my ($clause, $params) = @_;
 
-	# test custom attrs
-	if (my $pretend = delete $clause->{pretend}) {
-		$clause->{'cd.year'} = $pretend;
-	}
+  if (ref $clause eq 'HASH') {
+    # test custom attrs
+    if (my $pretend = delete $clause->{pretend}) {
+      $clause->{'cd.year'} = $pretend;
+    }
+  }
   my $rs = $self->SUPER::search(@_);	
 }
 

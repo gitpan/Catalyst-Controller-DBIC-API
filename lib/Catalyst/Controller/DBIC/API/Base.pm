@@ -288,7 +288,7 @@ sub validate {
 	my %values;
 	my %requires_map = map { $_ => 1 } @{($object->in_storage) ? [] : $c->stash->{create_requires} || $self->create_requires};
 	my %allows_map = map { (ref $_) ? %{$_} : ($_ => 1) } (keys %requires_map, @{($object->in_storage) ? ($c->stash->{update_allows} || $self->update_allows) : ($c->stash->{create_allows} || $self->create_allows)});
-	
+
 	foreach my $key (keys %allows_map) {
 		# check value defined if key required
 		my $allowed_fields = $allows_map{$key};
