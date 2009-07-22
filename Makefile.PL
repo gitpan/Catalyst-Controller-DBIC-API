@@ -4,7 +4,7 @@ name     'Catalyst-Controller-DBIC-API';
 perl_version '5.006001';
 all_from 'lib/Catalyst/Controller/DBIC/API.pm';
 
-requires 'DBIx::Class' => 0.08;
+requires 'DBIx::Class' => 0.08103;
 requires 'Catalyst::Runtime' => 5.7010;
 requires 'Catalyst::Action::REST' => 0.60;
 requires 'CGI::Expand' => 2.02;

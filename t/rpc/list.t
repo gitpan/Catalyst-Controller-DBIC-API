@@ -60,7 +60,6 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for complex query' );
 }
 
-exit;
 {
 	my $uri = URI->new( $producer_list_url );
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
@@ -156,7 +155,7 @@ exit;
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Track')->search({}, { group_by => 'position', order_by => 'position ASC', select => 'position', rows => 2, page => 2 })->all;
 	my $response = JSON::Syck::Load( $mech->content);
 	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned' );
+    is_deeply( { list => \@expected_response, success => 'true', totalcount => 3 }, $response, 'correct data returned' );
 }
 
 {

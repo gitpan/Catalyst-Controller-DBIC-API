@@ -1,5 +1,10 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.003002
+- Added totalcount to paged list responses
+- Fixed some tests weren't run in t/rpc/list.t
+- Fixed wrong setup_dbic_args_method error message
+
 1.003001
 - Minor fix to prevent failing test
 

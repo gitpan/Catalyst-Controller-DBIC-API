@@ -72,6 +72,9 @@ sub list :Private {
 	return if $self->get_errors($c);
 
 	$c->stash->{$self->rs_stash_key} = $c->stash->{$self->rs_stash_key}->search($params, $args);
+    # add the total count of all rows in case of a paged resultset
+    $c->stash->{_dbic_api}->{totalcount} = $c->stash->{$self->rs_stash_key}->pager->total_entries
+        if $args->{page};
 	$c->forward('format_list');
 }
 
@@ -96,12 +99,12 @@ sub generate_dbic_search_args :Private {
 		}
 	}
 
-	if ( my $a = $self->setup_list_method ) {
-		my $setup_action = $self->action_for($a);
+	if ( my $action_name = $self->setup_list_method ) {
+		my $setup_action = $self->action_for($action_name);
 		if ( defined $setup_action ) {
 			$c->forward("/$setup_action", [ $req_params ]);
 		} else {
-			$c->log->error("setup_list_method was configured, but action $a not found");
+			$c->log->error("setup_list_method was configured, but action $action_name not found");
 		}
 	}
 	my $source = $c->stash->{$self->rs_stash_key}->result_source;
@@ -138,12 +141,12 @@ sub generate_dbic_search_args :Private {
 		$args->{select} = [map { ($_ =~ m/\./) ? $_ : "me.$_" } (ref $args->{select}) ? @{$args->{select}} : $args->{select}];
 	}
 	$args->{join} = $join;
-	if ( my $action = $self->setup_dbic_args_method ) {
-		my $format_action = $self->action_for($action);
+	if ( my $action_name = $self->setup_dbic_args_method ) {
+		my $format_action = $self->action_for($action_name);
 		if ( defined $format_action ) {
 			($params, $args) = @{$c->forward("/$format_action", [ $params, $args ])};
 		} else {
-			$c->log->error("setup_dbic_args_method was configured, but action $a not found");
+			$c->log->error("setup_dbic_args_method was configured, but action $action_name not found");
 		}
 	}
 	
@@ -222,6 +225,11 @@ sub format_list :Private {
 	my $rs = $c->stash->{$self->rs_stash_key}->search;
 	$rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 	$c->stash->{response}->{list} = [ $rs->all ];
+    if (my $totalcount = $c->stash->{_dbic_api}->{totalcount}) {
+        # numify which is important for JSON
+        $totalcount += 0;
+        $c->stash->{response}->{totalcount} = $totalcount;
+    }
 }
 
 sub create :Private {
