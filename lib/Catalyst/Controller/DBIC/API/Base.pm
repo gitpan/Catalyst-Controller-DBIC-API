@@ -3,11 +3,12 @@ package													# hide from PAUSE
 
 use strict;
 use warnings;
-use base qw/Catalyst::Controller CGI::Expand/;
+use base qw/Catalyst::Controller/;
+use CGI::Expand qw/expand_hash/;
 
 use DBIx::Class::ResultClass::HashRefInflator;
 use JSON::Any;
-use Test::Deep::NoTest;
+use Test::Deep::NoTest qw/eq_deeply/;
 
 __PACKAGE__->mk_accessors(qw/
     class create_requires
@@ -47,10 +48,10 @@ sub deserialize :ActionClass('Deserialize') {
 	my ($self, $c) = @_;
 
 	my $req_params;
-	if ($c->req->data) {
+	if ($c->req->data && scalar(keys %{$c->req->data})) {
 		$req_params = $c->req->data;
 	} else {
-		$req_params = $self->expand_hash($c->req->params);
+		$req_params = expand_hash($c->req->params);
 		foreach my $param (qw/search list_count list_ordered_by list_grouped_by list_prefetch/) {
 			# these params can also be composed of JSON
 			eval {
@@ -281,7 +282,6 @@ sub validate_and_save_object {
 			if $c->debug;
 		return;
 	}
-#	use Data::Dumper; warn Dumper($params);
 	if ( $c->debug ) {
 		$c->log->debug("Saving object: $object");
 		$c->log->_dump( $params );
@@ -360,20 +360,29 @@ sub validate {
 
 sub save_object {
 	my ($self, $c, $object, $params) = @_;
-	
-	if ($object->in_storage) {
-		foreach my $key (keys %{$params}) {
-			if (ref $params->{$key}) {
-				my $related_params = delete $params->{$key};
-				my $row = $object->find_related($key, {} , {});
-				$row->update($related_params);
-			}
-		}
-		$object->update($params);
-	} else {
-		$object->set_columns($params);
-		$object->insert;
-	}
+
+    eval {
+    	if ($object->in_storage) {
+    		foreach my $key (keys %{$params}) {
+    			if (ref $params->{$key}) {
+    				my $related_params = delete $params->{$key};
+    				my $row = $object->find_related($key, {} , {});
+    				$row->update($related_params);
+    			}
+    		}
+    		$object->update($params);
+    	} else {
+    		$object->set_columns($params);
+    		$object->insert;
+    	}
+    };
+    if ($@) {
+        $c->log->error($@);
+        # send a generic error to the client to not give out infos about
+        # the database schema
+        $self->push_error($c, { message => 'a database error has occured.' });
+    }
+
 	return $object;
 }
 

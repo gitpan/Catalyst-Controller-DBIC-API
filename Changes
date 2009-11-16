@@ -1,5 +1,10 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.003003
+- Database errors are properly handled + test
+- Fixed isa redefined warnings
+- Fixed bug preventing compat with future Catalyst::Action::Deserialize versions
+
 1.003002
 - Added totalcount to paged list responses
 - Fixed some tests weren't run in t/rpc/list.t

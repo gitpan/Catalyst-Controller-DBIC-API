@@ -90,7 +90,7 @@ sub begin :Private {
 	my ($self, $c) = @_;
 
 	$c->forward('deserialize');
-	$c->req->params($c->req->data);
+	$c->req->params($c->stash->{_dbic_api}->{req_params});
 }
 
 sub object :Chained('setup') :CaptureArgs(1) :PathPart('id') {

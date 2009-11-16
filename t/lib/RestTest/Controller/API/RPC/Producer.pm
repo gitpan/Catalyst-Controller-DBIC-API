@@ -9,6 +9,7 @@ __PACKAGE__->config
     ( action => { setup => { PathPart => 'producer', Chained => '/api/rpc/rpc_base' } },
       class => 'RestTestDB::Producer',
       create_requires => ['name'],
+      create_allows => ['producerid'],
       update_allows => ['name'],
       list_returns => ['name']
       );

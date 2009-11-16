@@ -21,14 +21,6 @@ no_index:
   directory:
     - inc
     - t
-provides:
-  Catalyst::Controller::DBIC::API:
-    file: lib/Catalyst/Controller/DBIC/API.pm
-    version: 1.003002
-  Catalyst::Controller::DBIC::API::REST:
-    file: lib/Catalyst/Controller/DBIC/API/REST.pm
-  Catalyst::Controller::DBIC::API::RPC:
-    file: lib/Catalyst/Controller/DBIC/API/RPC.pm
 requires:
   CGI::Expand: 2.02
   Catalyst::Action::REST: 0.6
@@ -40,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/1.003/trunk/
-version: 1.003002
+version: 1.003003

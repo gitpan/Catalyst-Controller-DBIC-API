@@ -10,7 +10,7 @@ my $content_type = [ 'Content-Type', 'application/x-www-form-urlencoded' ];
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 11;
+use Test::More tests => 12;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -72,4 +72,16 @@ my $producer_create_url = "$base/api/rpc/producer/create";
 
   my $response = JSON::Syck::Load( $mech->content);
   is_deeply( $response, { success => 'true' }, 'json for new artist returned' );
+}
+
+# test create returns an error as expected when passing invalid value
+{
+  my $long_string = '-' x 1024;
+
+  my $req = POST( $producer_create_url, {
+	  producerid => $long_string,
+      name       => $long_string,
+  }, 'Accept' => 'text/json' );
+  $mech->request($req, $content_type);
+  cmp_ok( $mech->status, '==', 400, 'invalid param value produces error' );
 }
