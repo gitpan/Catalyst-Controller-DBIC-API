@@ -9,7 +9,8 @@ __PACKAGE__->config
     ( action => { setup => { PathPart => 'cd', Chained => '/api/rpc/rpc_base' } },
       class => 'RestTestDB::CD',
       create_requires => ['artist', 'title', 'year' ],
-      update_allows => ['title', 'year']
+      update_allows => ['title', 'year'],
+      list_prefetch_allows => [[qw/ tracks /]],
       );
 
 1;

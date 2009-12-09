@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -62,3 +62,14 @@ foreach my $req_params ({ 'list_prefetch' => '["artist"]' }, { 'list_prefetch' =
 	is_deeply({ success => 'false',messages => ["prefetch validation failed"]}, $response, 'correct message returned' );
 }
 
+{
+	my $uri = URI->new( $cd_list_url );
+	$uri->query_form({ 'list_prefetch' => 'tracks', 'list_ordered_by' => 'title', 'list_count' => 2, 'list_page' => 1 });
+	my $req = GET( $uri, 'Accept' => 'text/x-json' );
+	$mech->request($req);
+	if (cmp_ok( $mech->status, '==', 400, 'order_by on non-unique col with paging returns error' )) {
+		my $response = JSON::Syck::Load( $mech->content);
+		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
+            'error returned for order_by on non-existing col with paging' );
+	}
+}

@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More qw(no_plan);
+use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -33,3 +33,5 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   my $response = JSON::Syck::Load( $mech->content);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
 }
+
+done_testing();

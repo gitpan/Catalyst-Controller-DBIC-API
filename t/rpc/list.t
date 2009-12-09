@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More qw(no_plan);
+use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -207,3 +207,29 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 		is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on col which exists for me and related table' );
 	}
 }
+
+{
+	my $uri = URI->new( $cd_list_url );
+	$uri->query_form({ 'list_ordered_by' => 'invalid_column' });
+	my $req = GET( $uri, 'Accept' => 'text/x-json' );
+	$mech->request($req);
+	if (cmp_ok( $mech->status, '==', 400, 'order_by on non-existing col returns error' )) {
+		my $response = JSON::Syck::Load( $mech->content);
+		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
+            'error returned for order_by on non-existing col' );
+	}
+}
+
+{
+	my $uri = URI->new( $cd_list_url );
+	$uri->query_form({ 'list_ordered_by' => 'invalid_column', 'list_count' => 2, 'list_page' => 1 });
+	my $req = GET( $uri, 'Accept' => 'text/x-json' );
+	$mech->request($req);
+	if (cmp_ok( $mech->status, '==', 400, 'order_by on invalid col with paging returns error' )) {
+		my $response = JSON::Syck::Load( $mech->content);
+		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
+            'error returned for order_by on non-existing col with paging' );
+	}
+}
+
+done_testing();

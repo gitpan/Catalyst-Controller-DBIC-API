@@ -5,7 +5,7 @@ author:
 build_requires:
   Catalyst::Model::DBIC::Schema: 0.2
   ExtUtils::MakeMaker: 6.42
-  Test::More: 0.7
+  Test::More: 0.88
   Test::WWW::Mechanize: 0.2
   Test::WWW::Mechanize::Catalyst: 0.37
 configure_requires:
@@ -32,4 +32,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/1.003/trunk/
-version: 1.003003
+version: 1.003004

@@ -11,7 +11,7 @@ requires 'CGI::Expand' => 2.02;
 requires 'JSON::Any' => 1.19;
 requires 'Test::Deep' => 0.104;
 
-build_requires 'Test::More'       => 0.7;
+build_requires 'Test::More'       => 0.88;
 build_requires 'Catalyst::Model::DBIC::Schema' => 0.20;
 build_requires 'Test::WWW::Mechanize'       => 0.20;
 build_requires 'Test::WWW::Mechanize::Catalyst'       => 0.37;

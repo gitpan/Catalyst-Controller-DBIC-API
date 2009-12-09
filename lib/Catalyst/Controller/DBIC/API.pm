@@ -5,11 +5,11 @@ use warnings;
 
 =head1 VERSION
 
-Version 1.003000
+Version 1.003004
 
 =cut
 
-our $VERSION = '1.003003';
+our $VERSION = '1.003004';
 
 =head1 NAME
 

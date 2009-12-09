@@ -74,9 +74,19 @@ sub list :Private {
 
 	$c->stash->{$self->rs_stash_key} = $c->stash->{$self->rs_stash_key}->search($params, $args);
     # add the total count of all rows in case of a paged resultset
-    $c->stash->{_dbic_api}->{totalcount} = $c->stash->{$self->rs_stash_key}->pager->total_entries
-        if $args->{page};
-	$c->forward('format_list');
+    eval {
+        $c->stash->{_dbic_api}->{totalcount} = $c->stash->{$self->rs_stash_key}->pager->total_entries
+            if $args->{page};
+    };
+    if ($@) {
+        $c->log->error($@);
+        # send a generic error to the client to not give out infos about
+        # the database schema
+        $self->push_error($c, { message => 'a database error has occured.' });
+    }
+    else {
+        $c->forward('format_list');
+    }
 }
 
 sub generate_dbic_search_args :Private {
@@ -225,11 +235,22 @@ sub format_list :Private {
 	# it still is what they expect (and not inflating to a hash ref)
 	my $rs = $c->stash->{$self->rs_stash_key}->search;
 	$rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-	$c->stash->{response}->{list} = [ $rs->all ];
-    if (my $totalcount = $c->stash->{_dbic_api}->{totalcount}) {
-        # numify which is important for JSON
-        $totalcount += 0;
-        $c->stash->{response}->{totalcount} = $totalcount;
+    eval {
+	    $c->stash->{response}->{list} = [ $rs->all ];
+    };
+    if ($@) {
+        $c->log->error($@);
+        # send a generic error to the client to not give out infos about
+        # the database schema
+        $self->push_error($c, { message => 'a database error has occured.' });
+    }
+    else {
+        # only add the totalcount to the response if also data is returned
+        if (my $totalcount = $c->stash->{_dbic_api}->{totalcount}) {
+            # numify which is important for JSON
+            $totalcount += 0;
+            $c->stash->{response}->{totalcount} = $totalcount;
+        }
     }
 }
 
