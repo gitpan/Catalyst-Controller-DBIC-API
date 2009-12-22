@@ -1,5 +1,13 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.004000
+- Moosify
+- Move validation for *_exposes/*_allows to Data::DPath::Validator
+- Reorganize internals to use Moose and roles
+- Allow maximum configuration for what request parameters are named
+- Properly handle JSON boolean values
+- Earlier and more consistent validation of configuration and request parameters
+
 1.003004
 - Database errors are also handled for searches + tests
 - totalcount isn't included in the response if a db error occurs while fetching data

@@ -10,7 +10,7 @@ __PACKAGE__->config
       class => 'RestTestDB::Track',
       list_returns => [qw/position title/],
       list_ordered_by => [qw/position/],
-      list_search_exposes => [qw/position/, { cd => [qw/title year pretend/, { artist => ['*'] }] }],
+      list_search_exposes => [qw/position/, { cd => [qw/title year pretend/, { 'artist' => ['*'] } ]}],
       );
 
 1;

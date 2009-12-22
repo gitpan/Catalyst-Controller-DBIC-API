@@ -88,7 +88,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 
 {
 	my $uri = URI->new( $track_list_url );
-	$uri->query_form({ 'order_by' => 'position' });	
+	$uri->query_form({ 'list_ordered_by' => 'position' });	
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 200, 'search related request okay' );
@@ -132,7 +132,9 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'non numeric list_page request not okay' );
 	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply({ success => 'false', messages => ["list_page must be numeric"]}, $response, 'correct data returned' );
+	#  use Data::Dumper; warn Dumper($response);
+	is($response->{success}, 'false', 'correct data returned');
+    like($response->{messages}->[0], qr/Attribute \(page\) does not pass the type constraint because: Validation failed for 'Int' failed with value fgdg/, 'correct data returned');
 }
 
 {
@@ -142,7 +144,9 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'non numeric list_count request not okay' );
 	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply({ success => 'false', messages => ["list_count must be numeric"]}, $response, 'correct data returned' );
+	is($response->{success}, 'false', 'correct data returned');
+    like($response->{messages}->[0], qr/Attribute \(count\) does not pass the type constraint because: Validation failed for 'Int' failed with value sdsdf/, 'correct data returned');
+    
 }
 
 {

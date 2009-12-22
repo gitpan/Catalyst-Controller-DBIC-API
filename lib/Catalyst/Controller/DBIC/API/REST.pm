@@ -1,8 +1,7 @@
 package Catalyst::Controller::DBIC::API::REST;
-
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::Base/;
+our $VERSION = '1.004000';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
 
 __PACKAGE__->config(
 						'default'   => 'application/json',
@@ -74,16 +73,10 @@ Would move your object level endpoints to $base/id/[identifier].
 
 =cut 
 
-sub begin :Private {
-	my ($self, $c) = @_;
-
-	$c->forward('deserialize');
-}
-
 sub object :Chained('setup') :Args(1) :PathPart('') :ActionClass('REST') {
 	my ($self, $c, $id) = @_;
 
-	my $object = $c->stash->{$self->rs_stash_key}->find( $id );
+	my $object = $self->stored_model->find( $id );
 	unless ($object) {
 		$self->push_error($c, { message => "Invalid id" });
 		$c->detach; # no point continuing

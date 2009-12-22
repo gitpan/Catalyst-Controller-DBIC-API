@@ -5,11 +5,11 @@ use warnings;
 
 =head1 VERSION
 
-Version 1.003004
+Version 1.004
 
 =cut
 
-our $VERSION = '1.003004';
+our $VERSION = '1.004000';
 
 =head1 NAME
 
@@ -27,16 +27,19 @@ Catalyst::Controller::DBIC::API
       create_allows => ['nickname'], # additional non-required columns that create allows
       update_allows => ['name', 'age', 'nickname'], # columns that update allows
       update_allows => ['name', 'age', 'nickname'], # columns that update allows
-      list_returns => [qw/name age/], # columns that list returns
-      list_prefetch => ['cds'], # relationships that are prefetched when no prefetch param is passed
-      list_prefetch_allows => [ # every possible prefetch param allowed
+      select => [qw/name age/], # columns that data returns
+      prefetch => ['cds'], # relationships that are prefetched when no prefetch param is passed
+      prefetch_allows => [ # every possible prefetch param allowed
           'cds',
           qw/ cds /,
           { cds => 'tracks' },
           { cds => [qw/ tracks /] }
       ],
-      list_ordered_by => [qw/age/], # order of generated list
-      list_search_exposes => [qw/age nickname/, { cds => [qw/title year/] }], # columns that can be searched on via list
+      ordered_by => [qw/age/], # order of generated list
+      search_exposes => [qw/age nickname/, { cds => [qw/title year/] }], # columns that can be searched on via list
+      data_root => 'data' # defaults to "list" for backwards compatibility
+      use_json_boolean => 1, # use JSON::Any::true|false in the response instead of strings
+      return_object => 1, # makes create and update actions return the object
       );
 
   # Provides the following functional endpoints:
@@ -86,6 +89,18 @@ Note that the Chained, CaptureArgs and PathPart are just standard Catalyst confi
 
 Whatever you would pass to $c->model to get a resultset for this class. MyAppDB::Track for example.
 
+head2 data_root
+
+By default, the response data is serialized into $c->stash->{response}->{$self->data_root} and data_root defaults to 'list' to preserve backwards compatibility. This is now configuable to meet the needs of the consuming client.
+
+head2 use_json_boolean
+
+By default, the response success status is set to a string value of "true" or "false". If this attribute is true, JSON::Any's true() and false() will be used instead. Note, this does not effect other internal processing of boolean values.
+
+head2 count_arg, page_arg, select_arg, search_arg, grouped_by_arg, ordered_by_arg, prefetch_arg
+
+These attributes allow customization of the component to understand requests made by clients where these argument names are not flexible and cannot conform to this components defaults.
+
 =head2 create_requires
 
 Arrayref listing columns required to be passed to create in order for the request to be valid.
@@ -98,15 +113,19 @@ Arrayref listing columns additional to those specified in create_requires that a
 
 Arrayref listing columns that update will allow. Columns passed to update that are not listed here will be ignored.
 
-=head2 list_returns
+=head2 select
 
 Arguments to pass to L<DBIx::Class::ResultSet/select> when performing search for L</list>.
 
-=head2 list_prefetch
+=head2 select_exposes
+
+Columns and related columns that are okay to return in the resultset since clients can request more or less information specified than the above select argument.
+
+=head2 prefetch
 
 Arguments to pass to L<DBIx::Class::ResultSet/prefetch> when performing search for L</list>.
 
-=head2 list_prefetch_allows
+=head2 prefetch_allows
 
 Arrayref listing relationships that are allowed to be prefetched.
 This is necessary to avoid denial of service attacks in form of
@@ -116,20 +135,19 @@ Every element of the arrayref is one allowed parameter to prefetch.
 So for three searches, all requiring different prefetch parameters,
 three elements have to be passed to list_prefetch_allows in the controller.
 
-=head2 list_grouped_by
+=head2 grouped_by
 
 Arguments to pass to L<DBIx::Class::ResultSet/group_by> when performing search for L</list>.
 
-=head2 list_ordered_by
+=head2 ordered_by
 
 Arguments to pass to L<DBIx::Class::ResultSet/order_by> when performing search for L</list>.
 
-=head2 list_search_exposes
+=head2 search_exposes
 
 Columns and related columns that are okay to search on. For example if only the position column and all cd columns were to be allowed
 
- list_search_exposes => [qw/position/, { cd => ['*'] }]
-
+ search_exposes => [qw/position/, { cd => ['*'] }]
 
 You can also use this to allow custom columns should you wish to allow them through in order to be caught by a custom resultset. For example:
 
@@ -159,11 +177,11 @@ and then in your custom resultset:
     my $rs = $self->SUPER::search(@_);
   }
 
-=head2 list_count
+=head2 count
 
 Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
-=head2 list_page
+=head2 page
 
 Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
@@ -216,6 +234,10 @@ parameters, or add your own filters.  Below is an example of basic usage:
 
 Note: see the individual interface classes - L<Catalyst::Controller::DBIC::API::RPC> and L<Catalyst::Controller::DBIC::API::REST> - for details of the endpoints to these abstract methods.
 
+=head2 begin
+
+A begin method is provided to apply the L<Catalyst::Controller::DBIC::API::Request> role to $c->request, and perform deserialization and validation of request parameters
+
 =head2 setup
 
 This action is the chain root of the controller. It must either be overridden or configured to provide a base pathpart to the action and also a parent action. For example, for class MyAppDB::Track you might have
@@ -246,11 +268,11 @@ This action is the chain root for all object level actions (such as delete and u
 
 List level action chained from L</setup>. Checks $c->req->params for each column specified in the L</create_requires> and L</create_allows> parameters of the controller config. If all of the required columns are present then the object is created.
 
-Does not populate the response with any additional information.
+Does not populate the response with any additional information unless the return_object option is set to true, then the created object will be serialized within $c->stash->{response}->{$self->data_root}.
 
 =head2 list
 
-List level action chained from L</setup>. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the class resultset. If the L</list_returns> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</list_count>, L</list_page>, L</list_grouped_by> and L</list_ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if list_returns, list_count, list_ordered_by or list_grouped_by request parameters are present then these will override the values set on the class.
+List level action chained from L</setup>. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the class resultset. If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
 
 If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. You can use a JSON string as the 'search' parameter for maximum flexibility or use L</CGI::Expand> syntax. In the second case the request parameters are expanded into a structure and then $c->req->params->{search} is used as the search condition.
 
@@ -266,7 +288,7 @@ Would result in this search (where 'name' is a column of the schema class, 'cd' 
 
 Note that if pagination is needed, this can be achieved using a combination of the L</list_count> and L</list_page> parameters. For example:
 
-  ?list_page=2&list_count=20
+  ?page=2&count=20
 
 Would result in this search:
  
@@ -276,13 +298,13 @@ The L</format_list> method is used to format the results, so override that as re
 
 =head2 format_list
 
-Used by L</list> to populate response based on class resultset. By default populates $c->stash->{response}->{list} with a list of hashrefs representing each object in the resultset. Can be overidden to format the list as required.
+Used by L</list> to populate response based on class resultset. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the resultset. Can be overidden to format the list as required.
 
 =head2 update
 
 Object level action chained from L</object>. Checks $c->req->params for each column specified in the L</update_allows> parameter of the controller config. If any of these columns are found in $c->req->params then the object set by L</object> is updated with those columns.
 
-Does not populate the response with any additional information.
+Does not populate the response with any additional information uness the return_object option is set to true, then the updated object will be serialized within $c->stash->{response}->{$self->data_root}.
 
 =head2 delete
 
@@ -292,17 +314,20 @@ Does not populate the response with any additional information.
 
 =head2 end
 
-If the request was successful then $c->stash->{response}->{success} is set to 1, if not then it is set to 0 and $c->stash->{response}->{messages} set to an arrayref containing all error messages.
+$c->stash->{response}->{success} is set to 'true' or 'false' (or their respective JSON::Any values for true and false) regarding the success of the request. If the request failed, $c->stash->{response}->{messages} is set to an arrayref containing all error messages.
 
 Then the contents of $c->stash->{response} are serialized using L<Catalyst::Action::Serialize>.
 
 =head1 EXTENDING
 
-By default the create, delete and update actions will not return anything apart from the success parameter set in L</end>, often this is not ideal but the required behaviour varies from application to application. So normally it's sensible to write an intermediate class which your main controller classes subclass from. For example if you wanted create to return the JSON for the newly created object you might have something like:
+By default the create, delete and update actions will not return anything apart from the success parameter set in L</end>, often this is not ideal but the required behaviour varies from application to application. So normally it's sensible to write an intermediate class which your main controller classes subclass from.
+
+For example if you wanted create to return the JSON for the newly created object you might have something like:
 
   package MyApp::ControllerBase::DBIC::API::RPC;
   ...
-  use base qw/Catalyst::Controller::DBIC::API::RPC/;
+  use Moose;
+  BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' };
   ...
   sub create :Chained('setup') :Args(0) :PathPart('create') {
     my ($self, $c) = @_;
@@ -319,18 +344,35 @@ By default the create, delete and update actions will not return anything apart 
 
   package MyApp::Controller::API::RPC::Track;
   ...
-  use base qw/MyApp::ControllerBase::DBIC::API::RPC/;
+  use Moose;
+  BEGIN { extends 'MyApp::ControllerBase::DBIC::API::RPC' };
   ...
 
-If you were using the RPC style. For REST the only difference besides the class names would be that create should be :Private rather than an endpoint.
+It should be noted that the L</return_object> attribute will produce the above result for you, free of charge.
+
+For REST the only difference besides the class names would be that create should be :Private rather than an endpoint.
 
 Similarly you might want create, update and delete to all forward to the list action once they are done so you can refresh your view. This should also be simple enough.
+
+If more extensive customization is required, it is recommened to peer into the roles that comprise the system and make use 
+
+=head1 NOTES
+
+It should be noted that version 1.004 and above makes a rapid depature from the status quo. The internals were revamped to use more modern tools such as Moose and its role system to refactor functionality out into self-contained roles.
+
+To this end, internally, this module now understands JSON boolean values (as represented by JSON::Any) and will Do The Right Thing in handling those values. This means you can have ColumnInflators installed that can covert between JSON::Any booleans and whatever your database wants for boolean values.
+
+Validation for various *_allows or *_exposes is now accomplished via Data::DPath::Validator with a lightly simplified, via subclass, Data::DPath::Validator::Visitor. The rough jist of the process goes as follows: Arguments provided to those attributes are fed into the Validator and Data::DPaths are generated. Then, incoming requests are validated against these paths generated. The validator is set in "loose" mode meaning only one path is required to match. for more information, please see L<Data::DPath::Validator> and more specifically L<Catalyst::Controller::DBIC::API::Validator>.
+
+All in all, significant efforts have been made to preserve backwards compatibility with previous versions. This means arguments to config and even internal structures (ie, the stash) should Just Work. This is accomplished by using L<MooseX::Aliases> to provide a mapping from old names to new names. Even the validator behavior /should/ be the same if not a bit more consistent. Internal validation of ->config arguments also happens much, much sooner. And, request parameters are validated as upfront as possible before ->search.
 
 =head1 AUTHOR
 
   Luke Saunders <luke.saunders@gmail.com>
 
 =head1 CONTRIBUTORS
+
+  Nicholas Perez <nperez@cpan.org>
 
   J. Shirley <jshirley@gmail.com>
 

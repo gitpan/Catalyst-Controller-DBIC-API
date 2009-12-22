@@ -1,9 +1,7 @@
 package Catalyst::Controller::DBIC::API::RPC;
-
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::Base/;
-use JSON::Syck;
+our $VERSION = '1.004000';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
 
 __PACKAGE__->config(
 						'default'   => 'application/json',
@@ -85,13 +83,6 @@ CaptureArgs: 0
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update>.
 
 =cut 
-
-sub begin :Private {
-	my ($self, $c) = @_;
-
-	$c->forward('deserialize');
-	$c->req->params($c->stash->{_dbic_api}->{req_params});
-}
 
 sub object :Chained('setup') :CaptureArgs(1) :PathPart('id') {
 	my ($self, $c, $id) = @_;

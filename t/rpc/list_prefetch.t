@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More tests => 15;
+use Test::More tests => 17;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -32,6 +32,7 @@ foreach my $req_params ({ 'list_prefetch' => '["cds"]' }, { 'list_prefetch' => '
 	my @rows = $rs->all;
 	my $expected_response = { list => \@rows, success => 'true' };
 	my $response = JSON::Syck::Load( $mech->content);
+	#use Data::Dumper; warn Dumper($response, $expected_response);
 	is_deeply( $expected_response, $response, 'correct data returned for search with simple prefetch specified as param' );
 }
 
@@ -59,7 +60,9 @@ foreach my $req_params ({ 'list_prefetch' => '["artist"]' }, { 'list_prefetch' =
 
 	my $expected_response = map { { $_->get_columns } } $schema->resultset('CD')->all;
 	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply({ success => 'false',messages => ["prefetch validation failed"]}, $response, 'correct message returned' );
+	#use Data::Dumper; warn Dumper($response, $expected_response);
+    is($response->{success}, 'false', 'correct message returned' );
+	like($response->{messages}->[0], qr/not an allowed prefetch in:/, 'correct message returned' );
 }
 
 {

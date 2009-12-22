@@ -1,8 +1,7 @@
 package RestTest::Controller::API::RPC::CD;
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 use JSON::Syck;
 
 __PACKAGE__->config

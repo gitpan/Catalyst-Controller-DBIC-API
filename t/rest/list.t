@@ -78,7 +78,6 @@ my $producer_list_url = "$base/api/rest/producer";
 
   my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ 'cds.title' => 'Forkful of bees' }, { join => 'cds' })->all;
   my $response = JSON::Syck::Load( $mech->content);
-#  use Data::Dumper; warn Dumper($response, \@expected_response);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with list_returns specified' );
 }
 

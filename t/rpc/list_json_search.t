@@ -27,9 +27,9 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'attempt with gibberish json not okay' );
-	
 	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply( { messages => ['can not parse search arg'], success => 'false' }, $response, 'correct data returned for gibberish in search' );
+    is($response->{success}, 'false', 'correct data returned for gibberish in search' );
+	like($response->{messages}->[0], qr/Attribute \(search\) does not pass the type constraint because: Validation failed for 'HashRef' failed with value \{"gibberish\}/, 'correct data returned for gibberish in search' );
 }
 
 {

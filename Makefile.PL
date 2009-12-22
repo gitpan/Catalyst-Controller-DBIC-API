@@ -10,6 +10,8 @@ requires 'Catalyst::Action::REST' => 0.60;
 requires 'CGI::Expand' => 2.02;
 requires 'JSON::Any' => 1.19;
 requires 'Test::Deep' => 0.104;
+requires 'Data::DPath::Validator' => 0.093411;
+requires 'MooseX::Aliases' => 0.07;
 
 build_requires 'Test::More'       => 0.88;
 build_requires 'Catalyst::Model::DBIC::Schema' => 0.20;

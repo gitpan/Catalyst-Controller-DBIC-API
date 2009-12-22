@@ -26,10 +26,12 @@ requires:
   Catalyst::Action::REST: 0.6
   Catalyst::Runtime: 5.701
   DBIx::Class: 0.08103
+  Data::DPath::Validator: 0.093411
   JSON::Any: 1.19
+  MooseX::Aliases: 0.07
   Test::Deep: 0.104
   perl: 5.6.1
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/1.003/trunk/
-version: 1.003004
+version: 1.004000

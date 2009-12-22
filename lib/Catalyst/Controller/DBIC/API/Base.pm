@@ -1,46 +1,45 @@
-package													# hide from PAUSE
+package		# hide from PAUSE
 	Catalyst::Controller::DBIC::API::Base;
+our $VERSION = '1.004000';
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller/;
-use CGI::Expand qw/expand_hash/;
+use Moose;
 
+
+BEGIN { extends 'Catalyst::Controller'; }
+use CGI::Expand ();
 use DBIx::Class::ResultClass::HashRefInflator;
 use JSON::Any;
-use Test::Deep::NoTest qw/eq_deeply/;
+use Test::Deep::NoTest('eq_deeply');
+use MooseX::Types::Moose(':all');
+use MooseX::Aliases;
+use Moose::Util;
+use Try::Tiny;
+use Catalyst::Controller::DBIC::API::Request;
+use namespace::autoclean;
 
-__PACKAGE__->mk_accessors(qw/
-    class create_requires
-    update_requires update_allows
-    create_allows
-    list_count list_returns list_prefetch list_prefetch_allows
-    list_grouped_by list_search_exposes list_ordered_by
-    rs_stash_key object_stash_key
-    setup_list_method setup_dbic_args_method
-/);
+with 'Catalyst::Controller::DBIC::API::StoredResultSource';
+with 'Catalyst::Controller::DBIC::API::StaticArguments';
+with 'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
 
-__PACKAGE__->config(
-	class => undef,
-	create_requires => [],
-	create_allows => [],
-	update_requires => [],
-	update_allows => [],
-	list_returns => [],
-	list_prefetch => undef,
-	list_prefetch_allows => [],
-	list_grouped_by => [],
-	list_search_exposes => [],
-	list_ordered_by => [],
-	list_count => undef,
-	object_stash_key => 'object',
-	rs_stash_key => 'class_rs'
-);
+has 'rs_stash_key' => ( is => 'ro', isa => Str, default => 'class_rs' );
+has 'object_stash_key' => ( is => 'ro', isa => Str, default => 'object' );
+has 'setup_list_method' => ( is => 'ro', isa => Str, predicate => 'has_setup_list_method');
+has 'setup_dbic_args_method' => ( is => 'ro', isa => Str, predicate => 'has_setup_dbic_args_method');
+
+__PACKAGE__->config();
+
+sub begin :Private {
+    my ($self, $c) = @_;
+    
+    Catalyst::Controller::DBIC::API::Request->meta->apply($c->req)
+        unless Moose::Util::does_role($c->req, 'Catalyst::Controller::DBIC::API::Request');
+    $c->forward('deserialize');
+}
 
 sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config') {
 	my ($self, $c) = @_;
 
-	$c->stash->{$self->rs_stash_key} = $c->model($self->class);
+	$c->stash->{$self->rs_stash_key} = $self->stored_model;
 }
 
 # from Catalyst::Action::Serialize
@@ -51,16 +50,50 @@ sub deserialize :ActionClass('Deserialize') {
 	if ($c->req->data && scalar(keys %{$c->req->data})) {
 		$req_params = $c->req->data;
 	} else {
-		$req_params = expand_hash($c->req->params);
-		foreach my $param (qw/search list_count list_ordered_by list_grouped_by list_prefetch/) {
+		$req_params = CGI::Expand->expand_hash($c->req->params);
+		foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]}) {
 			# these params can also be composed of JSON
-			eval {
+			try 
+            {
 				my $deserialized = JSON::Any->from_json($req_params->{$param});
 				$req_params->{$param} = $deserialized;
-			};
+			}
+            catch { $c->log->debug("Param '$param' did not deserialize appropriately: $_") if $c->debug }
 		}
 	}
-	$c->stash->{_dbic_api}->{req_params} = $req_params;
+    
+    if(exists($req_params->{$self->data_root}))
+    {
+        my $val = delete $req_params->{$self->data_root};
+        $req_params->{data} = $val;
+    }
+    else
+    {
+        $req_params->{data} = \%$req_params;
+    }
+
+    try
+    {
+        # set static arguments
+        $c->req->_set_application($self); 
+        $c->req->_set_prefetch_allows($self->prefetch_allows);
+        $c->req->_set_search_exposes($self->search_exposes);
+        $c->req->_set_select_exposes($self->select_exposes);
+        $c->req->_set_request_data($req_params->{data});
+
+        # set request arguments
+        $c->req->_set_prefetch($req_params->{$self->prefetch_arg}) if exists $req_params->{$self->prefetch_arg};
+        $c->req->_set_select($req_params->{$self->select_arg}) if exists $req_params->{$self->select_arg};
+        $c->req->_set_grouped_by($req_params->{$self->grouped_by_arg}) if exists $req_params->{$self->grouped_by_arg};
+        $c->req->_set_ordered_by($req_params->{$self->ordered_by_arg}) if exists $req_params->{$self->ordered_by_arg};
+        $c->req->_set_search($req_params->{$self->search_arg}) if exists $req_params->{$self->search_arg};
+        $c->req->_set_count($req_params->{$self->count_arg}) if exists $req_params->{$self->count_arg};
+        $c->req->_set_page($req_params->{$self->page_arg}) if exists $req_params->{$self->page_arg};
+    }
+    catch
+    {
+        $self->push_error($c, { message => $_ });
+    }
 }
 
 sub list :Private {
@@ -71,21 +104,21 @@ sub list :Private {
 	return unless ($ret && ref $ret);
 	my ($params, $args) = @{$ret};
 	return if $self->get_errors($c);
-
+    
 	$c->stash->{$self->rs_stash_key} = $c->stash->{$self->rs_stash_key}->search($params, $args);
     # add the total count of all rows in case of a paged resultset
-    eval {
+    try 
+    {
         $c->stash->{_dbic_api}->{totalcount} = $c->stash->{$self->rs_stash_key}->pager->total_entries
             if $args->{page};
-    };
-    if ($@) {
-        $c->log->error($@);
+        $c->forward('format_list');
+    }
+    catch
+    {
+        $c->log->error($_);
         # send a generic error to the client to not give out infos about
         # the database schema
         $self->push_error($c, { message => 'a database error has occured.' });
-    }
-    else {
-        $c->forward('format_list');
     }
 }
 
@@ -93,64 +126,50 @@ sub generate_dbic_search_args :Private {
 	my ($self, $c) = @_;
   
 	my $args = {};
-	my $req_params = $c->stash->{_dbic_api}->{req_params};
-	my $prefetch = $req_params->{list_prefetch} || $self->list_prefetch || undef;
-	if ($prefetch) {
-		$prefetch = [$prefetch] unless ref $prefetch;
-		# validate the prefetch param against list_prefetch_allows
-		foreach my $prefetch_allows (@{$self->list_prefetch_allows}) {
-			if (eq_deeply($prefetch, $prefetch_allows)) {
-				$args->{prefetch} = $prefetch;
-				# stop looking for a valid prefetch param
-				last;
-			}
-		}
-		unless (exists $args->{prefetch}) {
-			$self->push_error($c, { message => "prefetch validation failed" });
-		}
-	}
+    my $req = $c->req;
+    my $pre_format_params;
 
 	if ( my $action_name = $self->setup_list_method ) {
 		my $setup_action = $self->action_for($action_name);
 		if ( defined $setup_action ) {
-			$c->forward("/$setup_action", [ $req_params ]);
+			$c->forward("/$setup_action", [ $req->request_data, $req ]);
+            if(exists($req->request_data->{$self->search_arg}))
+            {
+                if(!$req->has_search)
+                {
+                    $req->_set_search($req->request_data->{$self->search_arg});
+                }
+                elsif(!eq_deeply($req->has_search, $req->request_data->{$self->search_arg}))
+                {
+                    $req->_set_search($req->request_data->{$self->search_arg});
+                }
+            }
 		} else {
 			$c->log->error("setup_list_method was configured, but action $action_name not found");
 		}
 	}
-	my $source = $c->stash->{$self->rs_stash_key}->result_source;
+	my $source = $self->stored_result_source;
 
 	my ($params, $join);
 
-	if ($req_params->{search} && !ref $req_params->{search}) {
-		$self->push_error($c, { message => "can not parse search arg" });
-		return;
-	}
+	($params, $join) = $self->_format_search($c, { params => $req->search, source => $source }) if $req->has_search;
+    
+    $args->{prefetch} = $req->prefetch || $self->prefetch || undef;
+	$args->{group_by} = $req->grouped_by || ((scalar(@{$self->grouped_by})) ? $self->grouped_by : undef);
+	$args->{order_by} = $req->ordered_by || ((scalar(@{$self->ordered_by})) ? $self->ordered_by : undef);
+	$args->{rows} = $req->count || $self->count;
+    $args->{page} = $req->page;
 
-	($params, $join) = $self->_format_search($c, { params => $req_params->{search}, source => $source }) if ($req_params->{search});
-
-	$args->{group_by} = $req_params->{list_grouped_by} || ((scalar(@{$self->list_grouped_by})) ? $self->list_grouped_by : undef);
-	$args->{order_by} = $req_params->{list_ordered_by} || ((scalar(@{$self->list_ordered_by})) ? $self->list_ordered_by : undef);
-	$args->{rows} = $req_params->{list_count} || $self->list_count;
-	$args->{page} = $req_params->{list_page};
-	if ($args->{page}) {
-		unless ($args->{page} =~ /^\d+$/xms) {
-			$self->push_error($c, { message => "list_page must be numeric" });
-		}
-	}
-	if ($args->{rows}) {
-		unless ($args->{rows} =~ /^\d+$/xms) {
-			$self->push_error($c, { message => "list_count must be numeric" });
-		}
-	}
 	if ($args->{page} && !$args->{rows}) {
 		$self->push_error($c, { message => "list_page can only be used with list_count" });
 	}
-	$args->{select} = $req_params->{list_returns} || ((scalar(@{$self->list_returns})) ? $self->list_returns : undef);
+	
+    $args->{select} = $req->select || ((scalar(@{$self->select})) ? $self->select : undef);
 	if ($args->{select}) {
 		# make sure all columns have an alias to avoid ambiguous issues
 		$args->{select} = [map { ($_ =~ m/\./) ? $_ : "me.$_" } (ref $args->{select}) ? @{$args->{select}} : $args->{select}];
 	}
+
 	$args->{join} = $join;
 	if ( my $action_name = $self->setup_dbic_args_method ) {
 		my $format_action = $self->action_for($action_name);
@@ -172,42 +191,29 @@ sub _format_search {
 
 	my $join = {};
 	my %search_params;
-
+    
+    my $search_exposes = $self->search_exposes;
 	# munge list_search_exposes into format that's easy to do with
-	my %valid = map { (ref $_) ? %{$_} : ($_ => 1) } @{$p->{_list_search_exposes} || $self->list_search_exposes};
+	my %valid = map { (ref $_) ? %{$_} : ($_ => 1) } @{$p->{_list_search_exposes} || $search_exposes};
 	if ($valid{'*'}) {
 		# if the wildcard is passed they can access any column or relationship
 		$valid{$_} = 1 for $source->columns;
 		$valid{$_} = ['*'] for $source->relationships;
 	}
 	# figure out the valid cols, defaulting to all cols if not specified
-	my @valid_cols = @{$self->list_search_exposes} ? (grep { $valid{$_} eq 1 } keys %valid) : $source->columns;
+	my @valid_cols = @$search_exposes ? (grep { $valid{$_} eq 1 } keys %valid) : $source->columns;
 
 	# figure out the valid rels, defaulting to all rels if not specified
-	my @valid_rels = @{$self->list_search_exposes} ? (grep { ref $valid{$_} } keys %valid) : $source->relationships;
+	my @valid_rels = @$search_exposes ? (grep { ref $valid{$_} } keys %valid) : $source->relationships;
 
 	my %_col_map = map { $_ => 1 } @valid_cols;
 	my %_rel_map = map { $_ => 1 } @valid_rels;
 	my %_source_col_map = map { $_ => 1 } $source->columns;
 
-	# validate search params
-	foreach my $key (keys %{$params}) {
-		# if req args is a ref, assume it refers to a rel
-		# XXX this is broken when attempting complex search 
-		# XXX clauses on a col like { col => { LIKE => '%dfdsfs%' } }
-		# XXX when rel and col have the same name
-		next if $valid{'*'};
-		if (ref $params->{$key} && $_rel_map{$key}) {
-			$self->push_error($c, { message => "${key} is not a valid relation" }) unless (exists $_rel_map{$key});
-		} else {			
-			$self->push_error($c, { message => "${key} is not a valid column" }) unless exists $_col_map{$key};
-		}
-	}
-
 	# build up condition on root source
 	foreach my $column (@valid_cols) {
 		next unless (exists $params->{$column});
-		next if ($_rel_map{$column} && ref $params->{$column});
+		next if ($_rel_map{$column} && (ref $params->{$column} && !($params->{$column} == JSON::Any::true() || $params->{$column} == JSON::Any::false())));
 
 		if ($_source_col_map{$column}) {
 			$search_params{join('.', $base, $column)} = $params->{$column};
@@ -235,22 +241,22 @@ sub format_list :Private {
 	# it still is what they expect (and not inflating to a hash ref)
 	my $rs = $c->stash->{$self->rs_stash_key}->search;
 	$rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-    eval {
-	    $c->stash->{response}->{list} = [ $rs->all ];
-    };
-    if ($@) {
-        $c->log->error($@);
-        # send a generic error to the client to not give out infos about
-        # the database schema
-        $self->push_error($c, { message => 'a database error has occured.' });
-    }
-    else {
+    try
+    {
+	    $c->stash->{response}->{$self->data_root} = [ $rs->all ];
         # only add the totalcount to the response if also data is returned
         if (my $totalcount = $c->stash->{_dbic_api}->{totalcount}) {
             # numify which is important for JSON
             $totalcount += 0;
             $c->stash->{response}->{totalcount} = $totalcount;
         }
+    }
+    catch
+    {
+        $c->log->error($_);
+        # send a generic error to the client to not give out infos about
+        # the database schema
+        $self->push_error($c, { message => 'a database error has occured.' });
     }
 }
 
@@ -266,13 +272,12 @@ sub create :Private {
 
 	my $empty_object = $c->stash->{$self->rs_stash_key}->new_result({});
 	$c->stash->{created_object} = $self->validate_and_save_object($c, $empty_object);
+    %{$c->stash->{response}->{$self->data_root}} = $c->stash->{created_object}->get_inflated_columns
+        if $self->return_object;
 }
 
 sub update :Private {
 	my ($self, $c) = @_;
-
-	# expand params unless they have already been expanded
-	my $req_params = $c->stash->{_dbic_api}->{req_params};
 
 	die "no object to update (looking at " . $self->object_stash_key . ")"
 		unless ( defined $c->stash->{$self->object_stash_key} );
@@ -285,7 +290,10 @@ sub update :Private {
 	}
 
 	my $object = $c->stash->{$self->object_stash_key};
-	$self->validate_and_save_object($c, $object);
+	$object = $self->validate_and_save_object($c, $object);
+    %{$c->stash->{response}->{$self->data_root}} = $object->get_inflated_columns
+        if $self->return_object;
+
 }
 
 sub delete :Private {
@@ -312,7 +320,7 @@ sub validate_and_save_object {
 
 sub validate {
 	my ($self, $c, $object) = @_;
-	my $params = $c->stash->{_dbic_api}->{req_params};
+	my $params = $c->req->request_data();
 
 	my %values;
 	my %requires_map = map { $_ => 1 } @{($object->in_storage) ? [] : $c->stash->{create_requires} || $self->create_requires};
@@ -323,20 +331,7 @@ sub validate {
 		my $allowed_fields = $allows_map{$key};
 		if (ref $allowed_fields) {
 			my $related_source = $object->result_source->related_source($key);
-			unless ($related_source) {
-				$self->push_error($c, { message => "${key} is not a valid relation" });
-				next;
-			}
-
 			my $related_params = $params->{$key};
-			# it's an error for $c->req->params->{$key} to be defined but not be an array
-			unless (ref $related_params) {
-				unless (!defined $related_params) {
-					$self->push_error($c, { message => "Value of ${key} must be a hash" });
-				}
-				next;
-			}
-			
 			my %allowed_related_map = map { $_ => 1 } @{$allowed_fields};
 			my $allowed_related_cols = ($allowed_related_map{'*'}) ? [$related_source->columns] : $allowed_fields;
 			foreach my $related_col (@{$allowed_related_cols}) {
@@ -361,8 +356,9 @@ sub validate {
 			# TODO: do automatic col type checking here
 			
 			# check for multiple values
-			if (ref($value)) {
-				$self->push_error($c, { message => "Multiple values for '${key}'" });
+			if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false)) {
+                require Data::Dumper;
+				$self->push_error($c, { message => "Multiple values for '${key}': ${\Data::Dumper::Dumper($value)}" });
 			}
 
 			# check exists so we don't just end up with hash of undefs
@@ -382,10 +378,12 @@ sub validate {
 sub save_object {
 	my ($self, $c, $object, $params) = @_;
 
-    eval {
+    try
+    {
     	if ($object->in_storage) {
     		foreach my $key (keys %{$params}) {
-    			if (ref $params->{$key}) {
+                my $value = $params->{$key};
+    			if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false)) {
     				my $related_params = delete $params->{$key};
     				my $row = $object->find_related($key, {} , {});
     				$row->update($related_params);
@@ -396,15 +394,16 @@ sub save_object {
     		$object->set_columns($params);
     		$object->insert;
     	}
-    };
-    if ($@) {
+    }
+    catch
+    {
         $c->log->error($@);
         # send a generic error to the client to not give out infos about
         # the database schema
         $self->push_error($c, { message => 'a database error has occured.' });
-    }
-
-	return $object;
+    };
+    
+    return $object;
 }
 
 sub end :Private {
@@ -416,17 +415,17 @@ sub end :Private {
 	# Check for errors caught elsewhere
 	if ( $c->res->status and $c->res->status != 200 ) {
 		$default_status = $c->res->status;
-		$c->stash->{response}->{success} = 'false';
+		$c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
 	} elsif ($self->get_errors($c)) {
 		$c->stash->{response}->{messages} = $self->get_errors($c);
-		$c->stash->{response}->{success} = 'false';
+		$c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
 		$default_status = 400;
 	} else {
-		$c->stash->{response}->{success} = 'true';
+		$c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::true : 'true';
 		$default_status = 200;
 	}
 	
-	delete $c->stash->{response}->{list} unless ($default_status == 200);
+	delete $c->stash->{response}->{$self->data_root} unless ($default_status == 200);
 	$c->res->status( $default_status || 200 );
 	$c->forward('serialize');
 }
@@ -453,6 +452,10 @@ sub get_errors {
 =head1 AUTHOR
 
 Luke Saunders <luke.saunders@gmail.com>
+
+=head1 LICENSE
+
+You may distribute this code under the same terms as Perl itself.
 
 =cut
 
