@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 use MooseX::Role::Parameterized;
 use Catalyst::Controller::DBIC::API::Types(':all');
 use MooseX::Types::Moose(':all');
@@ -92,7 +92,7 @@ role {
                 {
                     if(HashRef->check($pf))
                     {
-                        die qq|'${\Dumper($pf)}' is not an allowd prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
+                        die qq|'${\Dumper($pf)}' is not an allowed prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
                             unless $self->prefetch_validator->validate($pf)->[0];
                     }
                     else
@@ -122,26 +122,34 @@ role {
         trigger => sub
         {
             my ($self, $new) = @_;
-            foreach my $rel (@$new)
-            {
+
+            sub check_rel {
+                my ($self, $rel, $static) = @_;
                 if(ArrayRef->check($rel))
                 {
                     foreach my $rel_sub (@$rel)
                     {
-                        $self->check_has_relation($rel_sub, undef, undef, $p->static);
-                        $self->prefetch_validator->load($rel_sub);
+                        $self->check_rel($rel_sub, $static);
                     }
                 }
                 elsif(HashRef->check($rel))
                 {
-                    $self->check_has_relation(%$rel, undef, $p->static);
+                    while(my($k,$v) = each %$rel)
+                    {
+                        $self->check_has_relation($k, $v, undef, $static);
+                    }
                     $self->prefetch_validator->load($rel);
                 }
                 else
                 {
-                    $self->check_has_relation($rel, undef, undef, $p->static);
+                    $self->check_has_relation($rel, undef, undef, $static);
                     $self->prefetch_validator->load($rel);
                 }
+            }
+
+            foreach my $rel (@$new)
+            {
+                $self->check_rel($rel, $p->static);
             }
         },
         traits => ['Aliased'],

@@ -9,7 +9,7 @@ Version 1.004
 
 =cut
 
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 
 =head1 NAME
 
@@ -133,7 +133,7 @@ queries which would return a large number of data
 and unwanted disclosure of data.
 Every element of the arrayref is one allowed parameter to prefetch.
 So for three searches, all requiring different prefetch parameters,
-three elements have to be passed to list_prefetch_allows in the controller.
+three elements have to be passed to prefetch_allows in the controller.
 
 =head2 grouped_by
 
@@ -157,7 +157,7 @@ You can also use this to allow custom columns should you wish to allow them thro
   
   __PACKAGE__->config
     ( ...,
-      list_search_exposes => [qw/position title custom_column/],
+      search_exposes => [qw/position title custom_column/],
       );
 
 and then in your custom resultset:

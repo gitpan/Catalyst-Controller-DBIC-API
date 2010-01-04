@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::REST;
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
 

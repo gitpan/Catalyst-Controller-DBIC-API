@@ -34,4 +34,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/1.003/trunk/
-version: 1.004000
+version: 1.004001

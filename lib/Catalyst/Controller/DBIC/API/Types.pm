@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Types;
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 
 use warnings;
 use strict;

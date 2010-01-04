@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 use Moose::Role;
 use Moose::Util::TypeConstraints;
 use MooseX::Types::Moose(':all');
@@ -51,12 +51,16 @@ sub check_has_relation
     {
         my $rel_src = $nest->related_source($rel);
         die "Relation '$rel_src' does not exist" if not defined($rel_src);
-        return $self->check_has_relation(%$other, $rel_src, $static);
+
+        while(my($k,$v) = each %$other)
+        {
+            $self->check_has_relation($k, $v, $rel_src, $static);
+        }
     }
     else
     {
         return 1 if $static && ArrayRef->check($other) && $other->[0] eq '*';
-        die "Relation '$rel' does not exist in ${\ref($nest)}"
+        die "Relation '$rel' does not exist in ${\$nest->from}"
             unless $nest->has_relationship($rel) || $nest->has_column($rel);
         return 1;
     }
@@ -70,12 +74,18 @@ sub check_column_relation
     {
         try
         {
-            $self->check_has_relation(%$col_rel, undef, $static);
+            while(my($k,$v) = each %$col_rel)
+            {
+                $self->check_has_relation($k, $v, undef, $static);
+            }
         }
         catch
         {
             # not a relation but a column with a predicate
-            $self->check_has_column(keys %$col_rel);
+            while(my($k, undef) = each %$col_rel)
+            {
+                $self->check_has_column($k);
+            }
         }
     }
     else

@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Request;
-our $VERSION = '1.004000';
+our $VERSION = '1.004001';
 use Moose::Role;
 use MooseX::Aliases;
 use MooseX::Types::Moose('Object');

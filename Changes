@@ -1,5 +1,12 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.004001
+- Allow for more complex prefetch_allows (multiple keys in hash)
+- Skip non-existant parameters in deserialization
+- Fixed whitespace to use spaces instead of tabs
+- Fixed pod to not use the config attributes from before 1.004
+- Fixed prefetch_allows check to properly handle nested attrs + test
+
 1.004000
 - Moosify
 - Move validation for *_exposes/*_allows to Data::DPath::Validator
@@ -10,8 +17,8 @@ Revision history for Catalyst-Controller-DBIC-API
 
 1.003004
 - Database errors are also handled for searches + tests
-- totalcount isn't included in the response if a db error occurs while fetching data
-- converted no_plan tests to done_testing (required Test::More 0.88)
+- Totalcount isn't included in the response if a db error occurs while fetching data
+- Converted no_plan tests to done_testing (required Test::More 0.88)
 
 1.003003
 - Database errors are properly handled + test
