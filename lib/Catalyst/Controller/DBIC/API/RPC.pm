@@ -1,15 +1,18 @@
 package Catalyst::Controller::DBIC::API::RPC;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
 
 __PACKAGE__->config(
-						'default'   => 'application/json',
-						'stash_key' => 'response',
-						'map'       => {
-							'application/x-www-form-urlencoded'        => 'JSON',
-							'application/json'        => 'JSON',
-						});
+    'action'    => { object => { PathPart => 'id' } }, 
+    'default'   => 'application/json',
+    'stash_key' => 'response',
+    'map'       => {
+        'application/x-www-form-urlencoded' => 'JSON',
+        'application/json'                  => 'JSON',
+    },
+);
+
 =head1 NAME
 
 Catalyst::Controller::DBIC::API::RPC
@@ -84,18 +87,6 @@ Provides an endpoint to the functionality described in L<Catalyst::Controller::D
 
 =cut 
 
-sub object :Chained('setup') :CaptureArgs(1) :PathPart('id') {
-	my ($self, $c, $id) = @_;
-
-	my $object = $c->stash->{$self->rs_stash_key}->find( $id );
-	unless ($object) {
-		$self->push_error($c, { message => "Invalid id" });
-		$c->detach; # no point continuing
-	}
-
-	$c->stash->{$self->object_stash_key} = $object;
-}
-
 sub index : Chained('setup') PathPart('') Args(0) {
 	my ( $self, $c ) = @_;
 
@@ -106,25 +97,25 @@ sub index : Chained('setup') PathPart('') Args(0) {
 sub create :Chained('setup') :PathPart('create') :Args(0) {
 	my ($self, $c) = @_;
 
-	$self->NEXT::create($c);
+        $self->next::method($c);
 }
 
 sub list :Chained('setup') :PathPart('list') :Args(0) {
 	my ($self, $c) = @_;
 
-	$self->NEXT::list($c);
+        $self->next::method($c);
 }
 
 sub update :Chained('object') :PathPart('update') :Args(0) {
 	my ($self, $c) = @_;
 
-	$self->NEXT::update($c);
+        $self->next::method($c);
 }
 
 sub delete :Chained('object') :PathPart('delete') :Args(0) {
 	my ($self, $c) = @_;
 
-	$self->NEXT::delete($c);
+        $self->next::method($c);
 }
 
 =head1 AUTHOR

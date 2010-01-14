@@ -3,7 +3,6 @@ package RestTest::Controller::API::RPC::Any;
 use strict;
 use warnings;
 use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
 
 sub setup :Chained('/api/rpc/rpc_base') :CaptureArgs(1) :PathPart('any') {
   my ($self, $c, $object_type) = @_;
@@ -21,7 +20,7 @@ sub setup :Chained('/api/rpc/rpc_base') :CaptureArgs(1) :PathPart('any') {
     return;
   }
 
-  $c->stash->{$self->rs_stash_key} = $c->model('RestTestDB::' . $config->{class});
+  $c->stash->{$self->rs_stash_key} = $c->model('RestTestDB')->resultset($config->{class});
   $c->stash->{$_} = $config->{$_} for keys %{$config};
 }
 

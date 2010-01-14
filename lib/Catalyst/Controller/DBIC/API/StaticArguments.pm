@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose::Role;
 use MooseX::Types::Moose(':all');
 use namespace::autoclean;
@@ -37,6 +37,7 @@ foreach my $var (qw/create_requires create_allows update_requires update_allows/
 has 'count_arg' => ( is => 'ro', isa => Str, default => 'list_count' );
 has 'page_arg' => ( is => 'ro', isa => Str, default => 'list_page' );
 has 'select_arg' => ( is => 'ro', isa => Str, default => 'list_returns' );
+has 'as_arg' => ( is => 'ro', isa => Str, default => 'as' );
 has 'search_arg' => ( is => 'ro', isa => Str, default => 'search' );
 has 'grouped_by_arg' => ( is => 'ro', isa => Str, default => 'list_grouped_by' );
 has 'ordered_by_arg' => ( is => 'ro', isa => Str, default => 'list_ordered_by' );

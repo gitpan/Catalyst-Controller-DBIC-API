@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose::Role;
 use Moose::Util::TypeConstraints;
 use MooseX::Types::Moose(':all');

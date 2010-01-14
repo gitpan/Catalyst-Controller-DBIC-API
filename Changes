@@ -1,5 +1,16 @@
 Revision history for Catalyst-Controller-DBIC-API
 
+1.004002
+- Implement 'as' as a complement to 'select'
+- CGI::Expand'ed search parameters are now also JSON decoded + test
+- Fixed pod for parameters using a json string which shouldn't be surrounded
+  by single quotes
+- Use next instead of NEXT in RPC
+- Moved sub object from RPC/REST to Base to DRY
+  This will break your code if you subclass from REST
+  and had relied on the action name 'object'
+- Check for defined objects before returning them for create/update
+
 1.004001
 - Allow for more complex prefetch_allows (multiple keys in hash)
 - Skip non-existant parameters in deserialization

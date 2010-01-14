@@ -1,6 +1,6 @@
 package        # hide from PAUSE
     Catalyst::Controller::DBIC::API::Base;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 
 use Moose;
 
@@ -42,6 +42,17 @@ sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('spec
     $c->stash->{$self->rs_stash_key} = $self->stored_model;
 }
 
+sub object :Chained('setup') :CaptureArgs(1) :PathPart('') {
+	my ($self, $c, $id) = @_;
+
+	my $object = $c->stash->{$self->rs_stash_key}->find( $id );
+	unless ($object) {
+		$self->push_error($c, { message => "Invalid id" });
+		$c->detach; # no point continuing
+	}
+	$c->stash->{$self->object_stash_key} = $object;
+}
+
 # from Catalyst::Action::Serialize
 sub deserialize :ActionClass('Deserialize') {
     my ($self, $c) = @_;
@@ -55,12 +66,29 @@ sub deserialize :ActionClass('Deserialize') {
             # these params can also be composed of JSON
             # but skip if the parameter is not provided
             next if not exists $req_params->{$param};
-            try 
-            {
-                my $deserialized = JSON::Any->from_json($req_params->{$param});
-                $req_params->{$param} = $deserialized;
+            # find out if CGI::Expand was involved
+            if (ref $req_params->{$param} eq 'HASH') {
+                for my $key ( keys %{$req_params->{$param}} ) {
+                    try {
+                        my $deserialized = JSON::Any->from_json($req_params->{$param}->{$key});
+                        $req_params->{$param}->{$key} = $deserialized;
+                    }
+                    catch { 
+                        $c->log->debug("Param '$param.$key' did not deserialize appropriately: $_")
+                        if $c->debug;
+                    }
+                }
             }
-            catch { $c->log->debug("Param '$param' did not deserialize appropriately: $_") if $c->debug }
+            else {
+                try {
+                    my $deserialized = JSON::Any->from_json($req_params->{$param});
+                    $req_params->{$param} = $deserialized;
+                }
+                catch { 
+                    $c->log->debug("Param '$param' did not deserialize appropriately: $_")
+                    if $c->debug;
+                }
+            }
         }
     }
     
@@ -86,6 +114,7 @@ sub deserialize :ActionClass('Deserialize') {
         # set request arguments
         $c->req->_set_prefetch($req_params->{$self->prefetch_arg}) if exists $req_params->{$self->prefetch_arg};
         $c->req->_set_select($req_params->{$self->select_arg}) if exists $req_params->{$self->select_arg};
+        $c->req->_set_as($req_params->{$self->as_arg}) if exists $req_params->{$self->as_arg};
         $c->req->_set_grouped_by($req_params->{$self->grouped_by_arg}) if exists $req_params->{$self->grouped_by_arg};
         $c->req->_set_ordered_by($req_params->{$self->ordered_by_arg}) if exists $req_params->{$self->ordered_by_arg};
         $c->req->_set_search($req_params->{$self->search_arg}) if exists $req_params->{$self->search_arg};
@@ -169,9 +198,12 @@ sub generate_dbic_search_args :Private {
     $args->{select} = $req->select || ((scalar(@{$self->select})) ? $self->select : undef);
     if ($args->{select}) {
         # make sure all columns have an alias to avoid ambiguous issues
-        $args->{select} = [map { ($_ =~ m/\./) ? $_ : "me.$_" } (ref $args->{select}) ? @{$args->{select}} : $args->{select}];
+        # but allow non strings (eg. hashrefs for db procs like 'count')
+        # to pass through unmolested
+        $args->{select} = [map { (Str->check($_) && $_ !~ m/\./) ? "me.$_" : $_ } (ref $args->{select}) ? @{$args->{select}} : $args->{select}];
     }
 
+    $args->{as} = $req->as || ((scalar(@{$self->as})) ? $self->as : undef);
     $args->{join} = $join;
     if ( my $action_name = $self->setup_dbic_args_method ) {
         my $format_action = $self->action_for($action_name);
@@ -275,7 +307,7 @@ sub create :Private {
     my $empty_object = $c->stash->{$self->rs_stash_key}->new_result({});
     $c->stash->{created_object} = $self->validate_and_save_object($c, $empty_object);
     %{$c->stash->{response}->{$self->data_root}} = $c->stash->{created_object}->get_inflated_columns
-        if $self->return_object;
+        if defined($c->stash->{created_object}) && $self->return_object;
 }
 
 sub update :Private {
@@ -294,7 +326,7 @@ sub update :Private {
     my $object = $c->stash->{$self->object_stash_key};
     $object = $self->validate_and_save_object($c, $object);
     %{$c->stash->{response}->{$self->data_root}} = $object->get_inflated_columns
-        if $self->return_object;
+        if defined($object) && $self->return_object;
 
 }
 

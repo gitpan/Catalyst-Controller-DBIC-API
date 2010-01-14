@@ -1,15 +1,16 @@
 package Catalyst::Controller::DBIC::API::REST;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
 
 __PACKAGE__->config(
-						'default'   => 'application/json',
-						'stash_key' => 'response',
-						'map'       => {
-							'application/x-www-form-urlencoded'        => 'JSON',
-							'application/json'        => 'JSON',
-						});
+    'default'   => 'application/json',
+    'stash_key' => 'response',
+    'map'       => {
+        'application/x-www-form-urlencoded' => 'JSON',
+        'application/json'                  => 'JSON',
+    });
+
 =head1 NAME
 
 Catalyst::Controller::DBIC::API::REST
@@ -73,30 +74,21 @@ Would move your object level endpoints to $base/id/[identifier].
 
 =cut 
 
-sub object :Chained('setup') :Args(1) :PathPart('') :ActionClass('REST') {
-	my ($self, $c, $id) = @_;
+sub rest :Chained('object') :Args(0) :PathPart('') :ActionClass('REST') {}
 
-	my $object = $self->stored_model->find( $id );
-	unless ($object) {
-		$self->push_error($c, { message => "Invalid id" });
-		$c->detach; # no point continuing
-	}
-	$c->stash->{$self->object_stash_key} = $object;
-}
-
-sub object_POST {
+sub rest_POST {
 	my ($self, $c) = @_;
 
 	$c->forward('update');
 }
 
-sub object_PUT {
+sub rest_PUT {
 	my ($self, $c) = @_;
 
 	$c->forward('update');
 }
 
-sub object_DELETE {
+sub rest_DELETE {
 	my ($self, $c) = @_;
 
 	$c->forward('delete');

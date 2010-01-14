@@ -1,10 +1,10 @@
 package Catalyst::Controller::DBIC::API::Types;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 
 use warnings;
 use strict;
 
-use MooseX::Types -declare => [qw/OrderedBy GroupedBy Prefetch SelectColumns/];
+use MooseX::Types -declare => [qw/OrderedBy GroupedBy Prefetch SelectColumns AsAliases/];
 use MooseX::Types::Moose(':all');
 
 subtype Prefetch, as Maybe[ArrayRef[Str|HashRef]];
@@ -18,5 +18,7 @@ coerce OrderedBy, from Str, via { [$_] };
 
 subtype SelectColumns, as Maybe[ArrayRef[Str|HashRef]];
 coerce SelectColumns, from Str, via { [$_] };
+
+subtype AsAliases, as Maybe[ArrayRef[Str]];
 
 1;

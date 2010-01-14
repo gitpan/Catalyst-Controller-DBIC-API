@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use MooseX::Role::Parameterized;
 use Catalyst::Controller::DBIC::API::Types(':all');
 use MooseX::Types::Moose(':all');
@@ -222,6 +222,7 @@ role {
         is => 'ro',
         writer => '_set_select',
         isa => SelectColumns,
+        predicate => 'has_select',
         default => sub { $p->static ? [] : undef },
         traits => ['Aliased'],
         alias => 'list_returns',
@@ -242,6 +243,27 @@ role {
                 $self->check_column_relation($_, $p->static) for @$new;
             }
         },
+    );
+
+    has as =>
+    (
+        is => 'ro',
+        writer => '_set_as',
+        isa => AsAliases,
+        default => sub { $p->static ? [] : undef },
+        trigger => sub
+        {
+            my ($self, $new) = @_;
+            if($self->has_select)
+            {
+                die "'as' argument count (${\scalar(@$new)}) must match 'select' argument count (${\scalar(@{$self->select})})"
+                    unless @$new == @{$self->select};
+            }
+            elsif(defined $new)
+            {
+                die "'as' is only valid if 'select is also provided'";
+            }
+        }
     );
 
     has 'request_data' =>

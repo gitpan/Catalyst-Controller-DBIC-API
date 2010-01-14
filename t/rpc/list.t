@@ -61,6 +61,18 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 }
 
 {
+	my $uri = URI->new( $artist_list_url );
+	$uri->query_form({ 'search.name.LIKE' => '%waul%', 'list_returns.0.count' => '*', 'as.0' => 'count'});
+	my $req = GET( $uri, 'Accept' => 'text/x-json' );
+	$mech->request($req);
+	cmp_ok( $mech->status, '==', 200, 'attempt with basic count' );
+
+	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ name => { LIKE => '%waul%' }}, { select => [ {count => '*'} ], as => ['count'] } )->all;
+	my $response = JSON::Syck::Load( $mech->content);
+	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for count' );
+}
+
+{
 	my $uri = URI->new( $producer_list_url );
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);

@@ -10,7 +10,7 @@ my $base = 'http://localhost';
 use RestTest;
 use DBICTest;
 use URI;
-use Test::More tests => 13;
+use Test::More tests => 15;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
 use JSON::Syck;
@@ -79,6 +79,18 @@ my $producer_list_url = "$base/api/rest/producer";
   my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ 'cds.title' => 'Forkful of bees' }, { join => 'cds' })->all;
   my $response = JSON::Syck::Load( $mech->content);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with list_returns specified' );
+}
+
+{
+  my $uri = URI->new( $artist_list_url );
+  $uri->query_form({ 'search.cds.title' => 'Forkful of bees', 'list_returns.0.count' => '*', 'as.0' => 'count'});	
+  my $req = GET( $uri, 'Accept' => 'text/x-json' );
+  $mech->request($req);
+  cmp_ok( $mech->status, '==', 200, 'search related request okay' );
+
+  my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ 'cds.title' => 'Forkful of bees' }, { select => [ {count => '*'} ], as => [ 'count' ], join => 'cds' })->all;
+  my $response = JSON::Syck::Load( $mech->content);
+  is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for count' );
 }
 
 {

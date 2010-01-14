@@ -9,7 +9,7 @@ Version 1.004
 
 =cut
 
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 
 =head1 NAME
 
@@ -97,7 +97,7 @@ head2 use_json_boolean
 
 By default, the response success status is set to a string value of "true" or "false". If this attribute is true, JSON::Any's true() and false() will be used instead. Note, this does not effect other internal processing of boolean values.
 
-head2 count_arg, page_arg, select_arg, search_arg, grouped_by_arg, ordered_by_arg, prefetch_arg
+head2 count_arg, page_arg, select_arg, search_arg, grouped_by_arg, ordered_by_arg, prefetch_arg, as_arg
 
 These attributes allow customization of the component to understand requests made by clients where these argument names are not flexible and cannot conform to this components defaults.
 
@@ -116,6 +116,10 @@ Arrayref listing columns that update will allow. Columns passed to update that a
 =head2 select
 
 Arguments to pass to L<DBIx::Class::ResultSet/select> when performing search for L</list>.
+
+=head2 as
+
+Complements arguments passed to L<DBIx::Class::ResultSet/select> when performing a search. This allows you to specify column names in the result for RDBMS functions, etc.
 
 =head2 select_exposes
 
@@ -158,7 +162,7 @@ You can also use this to allow custom columns should you wish to allow them thro
   __PACKAGE__->config
     ( ...,
       search_exposes => [qw/position title custom_column/],
-      );
+    );
 
 and then in your custom resultset:
 
@@ -263,6 +267,7 @@ This action will populate $c->stash->{$self->rs_stash_key} with $c->model($self-
 =head2 object
 
 This action is the chain root for all object level actions (such as delete and update). Takes one argument which is passed to L<DBIx::Class::ResultSet/find>, if an object is returned then it is set in $c->stash->{$self->object_stash_key}.
+The move of sub object in version 1.004002 from RPC/REST to Base will break your code if you subclass from REST and had relied on the 'object' action being an ActionClass('REST').
 
 =head2 create
 
@@ -272,7 +277,7 @@ Does not populate the response with any additional information unless the return
 
 =head2 list
 
-List level action chained from L</setup>. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the class resultset. If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
+List level action chained from L</setup>. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the class resultset. If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. L</select> of course supports the function/procedure calling semantics that L<DBIx::Class::ResultSet/select>. In order to have proper column names in the result, provide arguments in L</as> (which also follows L<DBIx::Class::ResultSet/as> semantics. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
 
 If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. You can use a JSON string as the 'search' parameter for maximum flexibility or use L</CGI::Expand> syntax. In the second case the request parameters are expanded into a structure and then $c->req->params->{search} is used as the search condition.
 
@@ -280,11 +285,15 @@ For example, these request parameters:
 
  ?search.name=fred&search.cd.artist=luke
  OR
- ?search='{"name":"fred","cd": {"artist":"luke"}}'
+ ?search={"name":"fred","cd": {"artist":"luke"}}
 
 Would result in this search (where 'name' is a column of the schema class, 'cd' is a relation of the schema class and 'artist' is a column of the related class):
 
  $rs->search({ name => 'fred', 'cd.artist' => 'luke' }, { join => ['cd'] })
+
+Since version 1.004002 it is also possible to use a JSON string for expandeded parameters:
+
+ ?search.datetime={"-between":["2010-01-06 19:28:00","2010-01-07 19:28:00"]}
 
 Note that if pagination is needed, this can be achieved using a combination of the L</list_count> and L</list_page> parameters. For example:
 

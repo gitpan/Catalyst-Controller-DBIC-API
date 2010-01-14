@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Visitor;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose;
 use namespace::autoclean;
 
@@ -93,7 +93,7 @@ around visit_value => sub
 Catalyst::Controller::DBIC::API::Visitor->meta->make_immutable;
 
 package Catalyst::Controller::DBIC::API::Validator;
-our $VERSION = '1.004001';
+our $VERSION = '1.004002';
 use Moose;
 use namespace::autoclean;
 
