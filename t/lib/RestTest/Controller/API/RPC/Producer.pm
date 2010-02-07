@@ -1,9 +1,9 @@
 package RestTest::Controller::API::RPC::Producer;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'producer', Chained => '/api/rpc/rpc_base' } },
@@ -11,16 +11,8 @@ __PACKAGE__->config
       create_requires => ['name'],
       create_allows => ['producerid'],
       update_allows => ['name'],
-      list_returns => ['name']
+      select => ['name'],
+      return_object => 1,
       );
-
-sub create :Chained('setup') :Args(0) :PathPart('create') {
-  my ($self, $c) = @_;
-  $self->next::method($c);
-
-  if ($c->stash->{created_object}) {
-    %{$c->stash->{response}->{new_producer}} = $c->stash->{created_object}->get_columns;
-  }
-}
 
 1;

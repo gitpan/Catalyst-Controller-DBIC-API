@@ -1,5 +1,6 @@
 package # hide from PAUSE 
     RestTest::Schema::ResultSet::Track;
+our $VERSION = '2.001001';
 
 use base 'RestTest::Schema::ResultSet';
 
@@ -7,10 +8,10 @@ sub search {
 	my $self = shift;
 	my ($clause, $params) = @_;
 
-  if (ref $clause eq 'HASH') {
+  if (ref $clause eq 'ARRAY') {
     # test custom attrs
-    if (my $pretend = delete $clause->{pretend}) {
-      $clause->{'cd.year'} = $pretend;
+    if (my $pretend = delete $clause->[0]->{'cd.pretend'}) {
+      $clause->[0]->{'cd.year'} = $pretend;
     }
   }
   my $rs = $self->SUPER::search(@_);	

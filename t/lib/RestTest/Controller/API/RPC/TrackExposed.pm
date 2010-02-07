@@ -1,16 +1,16 @@
 package RestTest::Controller::API::RPC::TrackExposed;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'track_exposed', Chained => '/api/rpc/rpc_base' } },
       class => 'RestTestDB::Track',
-      list_returns => [qw/position title/],
-      list_ordered_by => [qw/position/],
-      list_search_exposes => [qw/position/, { cd => [qw/title year pretend/, { 'artist' => ['*'] } ]}],
+      select => [qw/position title/],
+      ordered_by => [qw/position/],
+      search_exposes => [qw/position/, { cd => [qw/title year pretend/, { 'artist' => ['*'] } ]}],
       );
 
 1;

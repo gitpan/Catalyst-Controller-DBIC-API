@@ -1,5 +1,6 @@
 package # hide from PAUSE 
     DBICTest;
+our $VERSION = '2.001001';
 
 use strict;
 use warnings;

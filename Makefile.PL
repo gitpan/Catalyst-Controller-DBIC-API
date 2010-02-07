@@ -1,29 +1,45 @@
-use inc::Module::Install 0.87;
 
-name     'Catalyst-Controller-DBIC-API';
-perl_version '5.006001';
-all_from 'lib/Catalyst/Controller/DBIC/API.pm';
+use strict;
+use warnings;
 
-requires 'DBIx::Class' => 0.08103;
-requires 'Catalyst::Runtime' => 5.7010;
-requires 'Catalyst::Action::REST' => 0.60;
-requires 'CGI::Expand' => 2.02;
-requires 'JSON::Any' => 1.19;
-requires 'Test::Deep' => 0.104;
-requires 'Data::DPath::Validator' => 0.093411;
-requires 'MooseX::Aliases' => 0.07;
 
-build_requires 'Test::More'       => 0.88;
-build_requires 'Catalyst::Model::DBIC::Schema' => 0.20;
-build_requires 'Test::WWW::Mechanize'       => 0.20;
-build_requires 'Test::WWW::Mechanize::Catalyst'       => 0.37;
 
-tests_recursive();
+use ExtUtils::MakeMaker 6.11;
 
-auto_provides;
 
-auto_install;
 
-resources repository => 'http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/';
+my %WriteMakefileArgs = (
+                       'test' => {
+                                   'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
+                                 },
+                       'NAME' => 'Catalyst::Controller::DBIC::API',
+                       'DISTNAME' => 'Catalyst-Controller-DBIC-API',
+                       'AUTHOR' => 'Nicholas Perez <nperez@cpan.org>, Luke Saunders <luke.saunders@gmail.com>, Alexander Hartmaier <abraxxa@cpan.org>',
+                       'ABSTRACT' => 'Provides a DBIx::Class web service automagically',
+                       'EXE_FILES' => [],
+                       'VERSION' => '2.001001',
+                       'LICENSE' => 'perl',
+                       'PREREQ_PM' => {
+                                        'ExtUtils::MakeMaker' => '6.11',
+                                        'CGI::Expand' => '2.02',
+                                        'Test::More' => '0.88',
+                                        'Catalyst::Model::DBIC::Schema' => '0.20',
+                                        'Catalyst::Action::REST' => '0.60',
+                                        'Test::WWW::Mechanize::Catalyst' => '0.37',
+                                        'Catalyst::Runtime' => '5.7010',
+                                        'Test::Deep' => '0.104',
+                                        'DBIx::Class' => '0.08103',
+                                        'Test::WWW::Mechanize' => '0.20',
+                                        'JSON::Any' => '1.19',
+                                        'Data::DPath::Validator' => '0.093411'
+                                      }
+                     );
 
-WriteAll;
+
+delete $WriteMakefileArgs{LICENSE}
+  unless eval { ExtUtils::MakeMaker->VERSION(6.31) };
+
+WriteMakefile(%WriteMakefileArgs);
+
+
+

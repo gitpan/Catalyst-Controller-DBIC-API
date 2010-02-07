@@ -1,26 +1,29 @@
 package RestTest::Controller::API::RPC::Any;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
+use namespace::autoclean;
 
 sub setup :Chained('/api/rpc/rpc_base') :CaptureArgs(1) :PathPart('any') {
   my ($self, $c, $object_type) = @_;
 
   my $config = {};
   if ($object_type eq 'artist') {
-    $config->{class} = 'Artist';
+    $config->{class} = 'RestTestDB::Artist';
     $config->{create_requires} = [qw/name/];
     $config->{update_allows} = [qw/name/];
   } elsif ($object_type eq 'track') {
-    $config->{class} = 'Track';
+    $config->{class} = 'RestTestDB::Track';
     $config->{update_allows} = [qw/title position/];
   } else {
     $self->push_error($c, { message => "invalid object_type" });
     return;
   }
 
-  $c->stash->{$self->rs_stash_key} = $c->model('RestTestDB')->resultset($config->{class});
+  $c->req->_set_class($config->{class});
+  $self->_set_class($config->{class});
+  $c->req->_set_current_result_set($self->stored_result_source->resultset);
   $c->stash->{$_} = $config->{$_} for keys %{$config};
 }
 

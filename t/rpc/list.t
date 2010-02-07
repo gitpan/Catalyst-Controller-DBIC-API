@@ -13,7 +13,7 @@ use URI;
 use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -32,8 +32,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 {
@@ -44,8 +44,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'attempt with basic search okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ artistid => 1 })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned' );
 }
 
 {
@@ -56,8 +56,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'attempt with basic search okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ name => { LIKE => '%waul%' }})->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for complex query' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for complex query' );
 }
 
 {
@@ -68,8 +68,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'attempt with basic count' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ name => { LIKE => '%waul%' }}, { select => [ {count => '*'} ], as => ['count'] } )->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for count' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for count' );
 }
 
 {
@@ -79,9 +79,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'open producer request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Producer')->search({}, { select => ['name'] })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with list_returns specified' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for class with list_returns specified' );
 }
 
 
@@ -93,9 +92,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'search related request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Artist')->search({ 'cds.title' => 'Forkful of bees' }, { join => 'cds' })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with list_returns specified' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for class with list_returns specified' );
 }
 
 {
@@ -106,9 +104,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'search related request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Track')->search({}, { group_by => 'position', order_by => 'position ASC', select => 'position' })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for class with everything specified in class' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for class with everything specified in class' );
 }
 
 {
@@ -119,9 +116,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'search related request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Track')->search({}, { group_by => 'cd', order_by => 'cd ASC', select => 'cd' })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned when everything overridden in query' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned when everything overridden in query' );
 }
 
 {
@@ -132,9 +128,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'list count request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Track')->search({}, { group_by => 'position', order_by => 'position ASC', select => 'position', rows => 2 })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned' );
 }
 
 {
@@ -143,8 +138,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'non numeric list_page request not okay' );
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response);
+	my $response = JSON::Any->Load( $mech->content);
 	is($response->{success}, 'false', 'correct data returned');
     like($response->{messages}->[0], qr/Attribute \(page\) does not pass the type constraint because: Validation failed for 'Int' failed with value fgdg/, 'correct data returned');
 }
@@ -155,7 +149,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'non numeric list_count request not okay' );
-	my $response = JSON::Syck::Load( $mech->content);
+	my $response = JSON::Any->Load( $mech->content);
 	is($response->{success}, 'false', 'correct data returned');
     like($response->{messages}->[0], qr/Attribute \(count\) does not pass the type constraint because: Validation failed for 'Int' failed with value sdsdf/, 'correct data returned');
     
@@ -169,9 +163,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'list count with page request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('Track')->search({}, { group_by => 'position', order_by => 'position ASC', select => 'position', rows => 2, page => 2 })->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response, \@expected_response);
-    is_deeply( { list => \@expected_response, success => 'true', totalcount => 3 }, $response, 'correct data returned' );
+	my $response = JSON::Any->Load( $mech->content);
+    is_deeply( $response, { list => \@expected_response, success => 'true', totalcount => 3 }, 'correct data returned' );
 }
 
 {
@@ -180,9 +173,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	cmp_ok( $mech->status, '==', 400, 'list page without count returns error' );
-	my $response = JSON::Syck::Load( $mech->content);
-	#  use Data::Dumper; warn Dumper($response);
-	is_deeply( { messages => ['list_page can only be used with list_count'], success => 'false' }, $response, 'correct data returned' );
+	my $response = JSON::Any->Load( $mech->content);
+	like( $response->{messages}->[0], qr/a database error has occured/, 'correct data returned' );
 }
 
 {
@@ -192,9 +184,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	$mech->request($req);
 	if (cmp_ok( $mech->status, '==', 200, 'search on rel with same name column request okay' )) {
 		my @expected_response = map { { $_->get_columns } } $schema->resultset('CD')->search({'me.artist' => 1})->all;
-		my $response = JSON::Syck::Load( $mech->content);
-		#use Data::Dumper; warn Dumper($response, \@expected_response);
-		is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on rel with same name column' );
+		my $response = JSON::Any->Load( $mech->content);
+		is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for search on rel with same name column' );
 	}
 }
 
@@ -206,9 +197,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	cmp_ok( $mech->status, '==', 200, 'search on column with same name rel request okay' );
 
 	my @expected_response = map { { $_->get_columns } } $schema->resultset('CD')->search({'me.artist' => 1})->all;
-	my $response = JSON::Syck::Load( $mech->content);
-	#use Data::Dumper; warn Dumper($response, \@expected_response);
-	is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on column with same name rel' );
+	my $response = JSON::Any->Load( $mech->content);
+	is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for search on column with same name rel' );
 }
 
 {
@@ -218,9 +208,8 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	$mech->request($req);
 	if (cmp_ok( $mech->status, '==', 200, 'search on col which exists for me and related table okay' )) {
 		my @expected_response = map { { $_->get_columns } } $schema->resultset('CD')->search({'me.title' => 'Spoonful of bees', 'tracks.position' => 1}, { join => 'tracks' })->all;
-		my $response = JSON::Syck::Load( $mech->content);
-		#use Data::Dumper; warn Dumper($response, \@expected_response);
-		is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct data returned for search on col which exists for me and related table' );
+		my $response = JSON::Any->Load( $mech->content);
+		is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct data returned for search on col which exists for me and related table' );
 	}
 }
 
@@ -230,7 +219,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	if (cmp_ok( $mech->status, '==', 400, 'order_by on non-existing col returns error' )) {
-		my $response = JSON::Syck::Load( $mech->content);
+		my $response = JSON::Any->Load( $mech->content);
 		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
             'error returned for order_by on non-existing col' );
 	}
@@ -242,7 +231,7 @@ my $cd_list_url = "$base/api/rpc/cd/list";
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	if (cmp_ok( $mech->status, '==', 400, 'order_by on invalid col with paging returns error' )) {
-		my $response = JSON::Syck::Load( $mech->content);
+		my $response = JSON::Any->Load( $mech->content);
 		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
             'error returned for order_by on non-existing col with paging' );
 	}

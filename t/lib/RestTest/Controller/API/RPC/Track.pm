@@ -1,9 +1,9 @@
 package RestTest::Controller::API::RPC::Track;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } },
@@ -11,10 +11,10 @@ __PACKAGE__->config
       create_requires => ['cd', 'title' ],
       create_allows => ['cd', 'title', 'position' ],
       update_allows => ['title', 'position', { cd => ['*'] }],
-      list_grouped_by => ['position'],
-      list_returns => ['position'],
-      list_ordered_by => ['position'],
-			list_search_allows => ['title']
+      grouped_by => ['position'],
+      select => ['position'],
+      ordered_by => ['position'],
+	  search_exposes => ['title']
       );
 
 1;

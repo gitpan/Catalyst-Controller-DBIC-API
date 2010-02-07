@@ -1,5 +1,24 @@
+package Catalyst::Controller::DBIC::API::Validator;
+our $VERSION = '2.001001';
+#ABSTRACT: Provides validation services for inbound requests against whitelisted parameters
+use Moose;
+use namespace::autoclean;
+
+BEGIN { extends 'Data::DPath::Validator'; }
+
+has '+visitor' => ( 'builder' => '_build_custom_visitor' );
+
+sub _build_custom_visitor
+{
+    return Catalyst::Controller::DBIC::API::Visitor->new();
+}
+
+Catalyst::Controller::DBIC::API::Validator->meta->make_immutable;
+
+###############################################################################
 package Catalyst::Controller::DBIC::API::Visitor;
-our $VERSION = '1.004002';
+our $VERSION = '2.001001';
+
 use Moose;
 use namespace::autoclean;
 
@@ -92,19 +111,31 @@ around visit_value => sub
 
 Catalyst::Controller::DBIC::API::Visitor->meta->make_immutable;
 
-package Catalyst::Controller::DBIC::API::Validator;
-our $VERSION = '1.004002';
-use Moose;
-use namespace::autoclean;
-
-BEGIN { extends 'Data::DPath::Validator'; }
-
-has '+visitor' => ( 'builder' => '_build_custom_visitor' );
-
-sub _build_custom_visitor
-{
-    return Catalyst::Controller::DBIC::API::Visitor->new();
-}
-
-Catalyst::Controller::DBIC::API::Validator->meta->make_immutable;
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+Catalyst::Controller::DBIC::API::Validator - Provides validation services for inbound requests against whitelisted parameters
+
+=head1 VERSION
+
+version 2.001001
+
+=head1 AUTHORS
+
+  Nicholas Perez <nperez@cpan.org>
+  Luke Saunders <luke.saunders@gmail.com>
+  Alexander Hartmaier <abraxxa@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

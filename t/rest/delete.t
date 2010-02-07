@@ -13,7 +13,6 @@ use DBICTest;
 use Test::More tests => 4;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');

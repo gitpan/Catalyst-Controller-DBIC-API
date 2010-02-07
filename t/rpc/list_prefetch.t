@@ -13,7 +13,7 @@ use URI;
 use Test::More tests => 17;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -31,7 +31,7 @@ foreach my $req_params ({ 'list_prefetch' => '["cds"]' }, { 'list_prefetch' => '
 	$rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 	my @rows = $rs->all;
 	my $expected_response = { list => \@rows, success => 'true' };
-	my $response = JSON::Syck::Load( $mech->content);
+	my $response = JSON::Any->Load( $mech->content);
 	#use Data::Dumper; warn Dumper($response, $expected_response);
 	is_deeply( $expected_response, $response, 'correct data returned for search with simple prefetch specified as param' );
 }
@@ -46,7 +46,7 @@ foreach my $req_params ({ 'list_prefetch' => '{"cds":"tracks"}' }, { 'list_prefe
 	$rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
 	my @rows = $rs->all;
 	my $expected_response = { list => \@rows, success => 'true' };
-	my $response = JSON::Syck::Load( $mech->content);
+	my $response = JSON::Any->Load( $mech->content);
 	#use Data::Dumper; warn Dumper($response, $expected_response);
 	is_deeply( $expected_response, $response, 'correct data returned for search with multi-level prefetch specified as param' );
 }
@@ -59,7 +59,7 @@ foreach my $req_params ({ 'list_prefetch' => '["artist"]' }, { 'list_prefetch' =
 	cmp_ok( $mech->status, '==', 400, 'prefetch of artist not okay' );
 
 	my $expected_response = map { { $_->get_columns } } $schema->resultset('CD')->all;
-	my $response = JSON::Syck::Load( $mech->content);
+	my $response = JSON::Any->Load( $mech->content);
 	#use Data::Dumper; warn Dumper($response, $expected_response);
     is($response->{success}, 'false', 'correct message returned' );
 	like($response->{messages}->[0], qr/not an allowed prefetch in:/, 'correct message returned' );
@@ -71,7 +71,7 @@ foreach my $req_params ({ 'list_prefetch' => '["artist"]' }, { 'list_prefetch' =
 	my $req = GET( $uri, 'Accept' => 'text/x-json' );
 	$mech->request($req);
 	if (cmp_ok( $mech->status, '==', 400, 'order_by on non-unique col with paging returns error' )) {
-		my $response = JSON::Syck::Load( $mech->content);
+		my $response = JSON::Any->Load( $mech->content);
 		is_deeply( $response, { messages => ['a database error has occured.'], success => 'false' },
             'error returned for order_by on non-existing col with paging' );
 	}

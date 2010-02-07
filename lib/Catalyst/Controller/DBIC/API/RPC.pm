@@ -1,7 +1,9 @@
 package Catalyst::Controller::DBIC::API::RPC;
-our $VERSION = '1.004002';
+our $VERSION = '2.001001';
+#ABSTRACT: Provides an RPC interface to DBIx::Class
+
 use Moose;
-BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
+BEGIN { extends 'Catalyst::Controller::DBIC::API'; }
 
 __PACKAGE__->config(
     'action'    => { object => { PathPart => 'id' } }, 
@@ -13,9 +15,56 @@ __PACKAGE__->config(
     },
 );
 
+
+sub index : Chained('setup') PathPart('') Args(0) {
+	my ( $self, $c ) = @_;
+
+	$self->push_error($c, { message => 'Not implemented' });
+	$c->res->status( '404' );
+}
+
+
+sub create :Chained('setup') :PathPart('create') :Args(0)
+{
+	my ($self, $c) = @_;
+    $c->forward('object');
+    return if $self->get_errors($c);
+    $c->forward('update_or_create');
+}
+
+
+sub list :Chained('setup') :PathPart('list') :Args(0) {
+	my ($self, $c) = @_;
+
+        $self->next::method($c);
+}
+
+
+sub update :Chained('object') :PathPart('update') :Args(0) {
+	my ($self, $c) = @_;
+
+    $c->forward('update_or_create');
+}
+
+
+sub delete :Chained('object') :PathPart('delete') :Args(0) {
+	my ($self, $c) = @_;
+
+        $self->next::method($c);
+}
+
+1;
+
+__END__
+=pod
+
 =head1 NAME
 
-Catalyst::Controller::DBIC::API::RPC
+Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
+
+=head1 VERSION
+
+version 2.001001
 
 =head1 DESCRIPTION
 
@@ -30,7 +79,7 @@ By default provides the following endpoints:
 
 Where $base is the URI described by L</setup>, the chain root of the controller.
 
-=head1 METHODS
+=head1 PROTECTED_METHODS
 
 =head2 setup
 
@@ -59,7 +108,7 @@ Chained: L</setup>
 PathPart: create
 CaptureArgs: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/create>.
+Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create>.
 
 =head2 list
 
@@ -69,6 +118,14 @@ CaptureArgs: 0
 
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/list>.
 
+=head2 update
+
+Chained: L</object>
+PathPart: update
+CaptureArgs: 0
+
+Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create>.
+
 =head2 delete
 
 Chained: L</object>
@@ -77,55 +134,18 @@ CaptureArgs: 0
 
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/delete>.
 
-=head2 update
+=head1 AUTHORS
 
-Chained: L</object>
-PathPart: update
-CaptureArgs: 0
-
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update>.
-
-=cut 
-
-sub index : Chained('setup') PathPart('') Args(0) {
-	my ( $self, $c ) = @_;
-
-	$self->push_error($c, { message => 'Not implemented' });
-	$c->res->status( '404' );
-}
-
-sub create :Chained('setup') :PathPart('create') :Args(0) {
-	my ($self, $c) = @_;
-
-        $self->next::method($c);
-}
-
-sub list :Chained('setup') :PathPart('list') :Args(0) {
-	my ($self, $c) = @_;
-
-        $self->next::method($c);
-}
-
-sub update :Chained('object') :PathPart('update') :Args(0) {
-	my ($self, $c) = @_;
-
-        $self->next::method($c);
-}
-
-sub delete :Chained('object') :PathPart('delete') :Args(0) {
-	my ($self, $c) = @_;
-
-        $self->next::method($c);
-}
-
-=head1 AUTHOR
-
+  Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
+  Alexander Hartmaier <abraxxa@cpan.org>
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
 
-You may distribute this code under the same terms as Perl itself.
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
 
-1;

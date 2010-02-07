@@ -1,9 +1,8 @@
 package RestTest::Controller::API::REST::Artist;
-
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::REST/;
-use JSON::Syck;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::REST' }
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rest/rest_base' } },
@@ -11,7 +10,7 @@ __PACKAGE__->config
       create_requires => ['name'],
       create_allows => ['name'],
       update_allows => ['name'],
-      list_prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
+      prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
       );
 
 1;

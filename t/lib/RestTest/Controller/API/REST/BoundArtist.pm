@@ -1,24 +1,24 @@
 package RestTest::Controller::API::REST::BoundArtist;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'RestTest::Controller::API::REST::Artist'; }
 
-use strict;
-use warnings;
-use base qw/RestTest::Controller::API::REST::Artist/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'bound_artist', Chained => '/api/rest/rest_base' } },
       class => 'RestTestDB::Artist',
-      setup_list_method => 'filter_search',
       create_requires => ['name'],
       create_allows => ['name'],
       update_allows => ['name']
       );
 
 # Arbitrary limit
-sub filter_search : Private {
-    my ( $self, $c, $query ) = @_;
-    # Return the first one, regardless of what comes in via params
-    $query->{search}->{'artistid'} = 1;
-}
+override list_munge_parameters => sub
+{
+    my ( $self, $c) = @_;
+    # Return the first one, regardless of arguments
+    $c->req->search_parameters->[0]->{'me.artistid'} = 1;
+};
 
 1;

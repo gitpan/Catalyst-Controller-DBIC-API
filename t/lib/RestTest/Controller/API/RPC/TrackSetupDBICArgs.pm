@@ -1,23 +1,22 @@
 package RestTest::Controller::API::RPC::TrackSetupDBICArgs;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'track_setup_dbic_args', Chained => '/api/rpc/rpc_base' } },
       class => 'RestTestDB::Track',
-      list_returns => [qw/position title/],
-      list_ordered_by => [qw/position/],
-			setup_dbic_args_method => 'setup_dbic_args'
+      select => [qw/position title/],
+      ordered_by => [qw/position/],
       );
 
-sub setup_dbic_args : Private {
-	my ($self, $c, $params, $args) = @_;
+override list_munge_parameters => sub
+{
+	my ($self, $c) = @_;
 
-	$params->{position} = { '!=' => '1' };
-	return [$params, $args];
-}
+	$c->req->search_parameters->[0]->{'me.position'} = { '!=' => '1' };
+};
 
 1;

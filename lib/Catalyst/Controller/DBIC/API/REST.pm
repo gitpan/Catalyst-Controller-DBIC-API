@@ -1,7 +1,9 @@
 package Catalyst::Controller::DBIC::API::REST;
-our $VERSION = '1.004002';
+our $VERSION = '2.001001';
+
+#ABSTRACT: Provides a REST interface to DBIx::Class
 use Moose;
-BEGIN { extends 'Catalyst::Controller::DBIC::API::Base'; }
+BEGIN { extends 'Catalyst::Controller::DBIC::API'; }
 
 __PACKAGE__->config(
     'default'   => 'application/json',
@@ -11,9 +13,54 @@ __PACKAGE__->config(
         'application/json'                  => 'JSON',
     });
 
+
+sub base : Chained('setup') PathPart('') ActionClass('REST') Args {
+	my ( $self, $c ) = @_;
+
+}
+
+sub base_PUT {
+	my ( $self, $c ) = @_;
+    
+    $c->forward('object');
+    return if $self->get_errors($c);
+    $c->forward('update_or_create');
+}
+
+sub base_POST {
+	my ( $self, $c ) = @_;
+
+    $c->forward('object');
+    return if $self->get_errors($c);
+    $c->forward('update_or_create');
+}
+
+sub base_DELETE {
+	my ( $self, $c ) = @_;
+    $DB::single =1;
+    $c->forward('object');
+    return if $self->get_errors($c);
+    $c->forward('delete');
+}
+
+sub base_GET {
+	my ( $self, $c ) = @_;
+
+	$c->forward('list');
+}
+
+1;
+
+__END__
+=pod
+
 =head1 NAME
 
-Catalyst::Controller::DBIC::API::REST
+Catalyst::Controller::DBIC::API::REST - Provides a REST interface to DBIx::Class
+
+=head1 VERSION
+
+version 2.001001
 
 =head1 DESCRIPTION
 
@@ -26,7 +73,7 @@ By default provides the following endpoints:
 
 Where $base is the URI described by L</setup>, the chain root of the controller, and the request type will determine the L<Catalyst::Controller::DBIC::API> method to forward.
 
-=head1 METHODS
+=head1 PROTECTED_METHODS
 
 =head2 setup
 
@@ -49,83 +96,22 @@ CaptureArgs: 0
 
 Forwards to list level methods described in L<Catalyst::Controller::DBIC::API> as follows:
 
-POST: forwards to L<Catalyst::Controller::DBIC::API/create>
+DELETE: forwards to L<Catalyst::Controller::DBIC::API/object> then L<Catalyst::Controller::DBIC::API/delete>
+POST/PUT: forwards to L<Catalyst::Controller::DBIC::API/object> then L<Catalyst::Controller::DBIC::API/update_or_create>
 GET: forwards to L<Catalyst::Controller::DBIC::API/list>
 
-=head2 object
+=head1 AUTHORS
 
-Chained: L</setup>
-PathPart: none
-CaptureArgs: 1
-
-Forwards to object level methods described in L<Catalyst::Controller::DBIC::API> as follows:
-
-DELETE: forwards to L<Catalyst::Controller::DBIC::API/delete>
-PUT: forwards to L<Catalyst::Controller::DBIC::API/update>
-
-Note: It is often sensible although controversial to give this method a PathPart to clearly distinguish between object and list level methods. You can easily do this by using the controller config as with L</setup>. For example:
-
-  __PACKAGE__->config
-    ( action => { object => { PathPart => 'id', Chained => 'setup' } }, 
-	...
-  );
-
-Would move your object level endpoints to $base/id/[identifier].
-
-=cut 
-
-sub rest :Chained('object') :Args(0) :PathPart('') :ActionClass('REST') {}
-
-sub rest_POST {
-	my ($self, $c) = @_;
-
-	$c->forward('update');
-}
-
-sub rest_PUT {
-	my ($self, $c) = @_;
-
-	$c->forward('update');
-}
-
-sub rest_DELETE {
-	my ($self, $c) = @_;
-
-	$c->forward('delete');
-}
-
-
-sub base : Chained('setup') PathPart('') ActionClass('REST') Args(0) {
-	my ( $self, $c ) = @_;
-
-}
-
-sub base_PUT {
-	my ( $self, $c ) = @_;
-
-	$c->forward('create');
-}
-
-sub base_POST {
-	my ( $self, $c ) = @_;
-
-	$c->forward('create');
-}
-
-sub base_GET {
-	my ( $self, $c ) = @_;
-
-	$c->forward('list');
-}
-
-=head1 AUTHOR
-
+  Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
+  Alexander Hartmaier <abraxxa@cpan.org>
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
 
-You may distribute this code under the same terms as Perl itself.
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
 
-1;

@@ -1,24 +1,567 @@
 package Catalyst::Controller::DBIC::API;
+our $VERSION = '2.001001';
 
-use strict;
-use warnings;
+#ABSTRACT: Provides a DBIx::Class web service automagically
+use Moose;
+BEGIN { extends 'Catalyst::Controller'; }
 
-=head1 VERSION
+use CGI::Expand ();
+use DBIx::Class::ResultClass::HashRefInflator;
+use JSON::Any;
+use Test::Deep::NoTest('eq_deeply');
+use MooseX::Types::Moose(':all');
+use Moose::Util;
+use Scalar::Util('blessed', 'reftype');
+use Try::Tiny;
+use Catalyst::Controller::DBIC::API::Request;
+use namespace::autoclean;
 
-Version 1.004
+with 'Catalyst::Controller::DBIC::API::StoredResultSource';
+with 'Catalyst::Controller::DBIC::API::StaticArguments';
+with 'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
 
-=cut
+__PACKAGE__->config();
 
-our $VERSION = '1.004002';
+
+
+sub begin :Private
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+    
+    Catalyst::Controller::DBIC::API::Request->meta->apply($c->req)
+        unless Moose::Util::does_role($c->req, 'Catalyst::Controller::DBIC::API::Request');
+    $c->forward('deserialize');
+}
+
+
+sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config')
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+
+    $c->req->_set_current_result_set($self->stored_result_source->resultset);
+}
+
+
+sub object :Chained('setup') :CaptureArgs(1) :PathPart('')
+{
+	my ($self, $c, $id) = @_;
+
+    my $vals = $c->req->request_data->{$self->data_root};
+    unless(defined($vals))
+    {
+        # no data root, assume the request_data itself is the payload
+        $vals = [$c->req->request_data || {}];
+    }
+    elsif(reftype($vals) eq 'HASH')
+    {
+        $vals = [ $vals ];
+    }
+
+    if(defined($id))
+    {
+        try
+        {
+            # there can be only one set of data
+            $c->req->add_object([$self->object_lookup($c, $id), $vals->[0]]);
+        }
+        catch
+        {
+            $c->log->error($_);
+            $self->push_error($c, { message => $_ });
+            $c->detach();
+        }
+    }
+    else
+    {
+        unless(reftype($vals) eq 'ARRAY')
+        {
+            $c->log->error('Invalid request data');
+            $self->push_error($c, { message => 'Invalid request data' });
+            $c->detach();
+        }
+
+        foreach my $val (@$vals)
+        {
+            unless(exists($val->{id}))
+            {
+                $c->req->add_object([$c->req->current_result_set->new_result({}), $val]);
+                next;
+            }
+
+            try
+            {
+                $c->req->add_object([$self->object_lookup($c, $val->{id}), $val]);
+            }
+            catch
+            {
+                $c->log->error($_);
+                $self->push_error($c, { message => $_ });
+                $c->detach();
+            }
+        }
+    }
+}
+
+
+sub object_lookup
+{
+    my ($self, $c, $id) = @_;
+
+    die 'No valid ID provided for look up' unless defined $id and length $id;
+    my $object = $c->req->current_result_set->find($id);
+    die "No object found for id '$id'" unless defined $object;
+    return $object;
+}
+
+
+sub deserialize :ActionClass('Deserialize')
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+    my $req_params;
+
+    if ($c->req->data && scalar(keys %{$c->req->data}))
+    {
+        $req_params = $c->req->data;
+    }
+    else 
+    {
+        $req_params = CGI::Expand->expand_hash($c->req->params);
+
+        foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]})
+        {
+            # these params can also be composed of JSON
+            # but skip if the parameter is not provided
+            next if not exists $req_params->{$param};
+            # find out if CGI::Expand was involved
+            if (ref $req_params->{$param} eq 'HASH')
+            {
+                for my $key ( keys %{$req_params->{$param}} )
+                {
+                    try
+                    {
+                        my $deserialized = JSON::Any->from_json($req_params->{$param}->{$key});
+                        $req_params->{$param}->{$key} = $deserialized;
+                    }
+                    catch
+                    { 
+                        $c->log->debug("Param '$param.$key' did not deserialize appropriately: $_")
+                        if $c->debug;
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    my $deserialized = JSON::Any->from_json($req_params->{$param});
+                    $req_params->{$param} = $deserialized;
+                }
+                catch
+                { 
+                    $c->log->debug("Param '$param' did not deserialize appropriately: $_")
+                    if $c->debug;
+                }
+            }
+        }
+    }
+    
+    $self->inflate_request($c, $req_params);
+}
+
+
+sub inflate_request
+{
+    $DB::single = 1;
+    my ($self, $c, $params) = @_;
+
+    try
+    {
+        # set static arguments
+        $c->req->_set_controller($self); 
+
+        # set request arguments
+        $c->req->_set_request_data($params);
+        
+    }
+    catch
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => $_ });
+        $c->detach();
+    }
+    
+}
+
+
+sub list :Private 
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+
+    $self->list_munge_parameters($c);
+    $self->list_perform_search($c);
+    $self->list_format_output($c);
+}
+
+
+sub list_munge_parameters { } # noop by default
+
+
+sub list_perform_search
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+    
+    try 
+    {
+        my $req = $c->req;
+        
+        my $rs = $req->current_result_set->search
+        (
+            $req->search_parameters, 
+            $req->search_attributes
+        );
+
+        $req->_set_current_result_set($rs);
+
+        $req->_set_search_total_entries($req->current_result_set->pager->total_entries)
+            if $req->has_search_attributes && $req->search_attributes->{page};
+    }
+    catch
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'a database error has occured.' });
+        $c->detach();
+    }
+}
+
+
+sub list_format_output
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+
+    my $rs = $c->req->current_result_set->search;
+    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    
+    try
+    {
+        my $output = {};
+        my $formatted = [];
+        
+        foreach my $row ($rs->all)
+        {
+            push(@$formatted, $self->row_format_output($row));
+        }
+        
+        $output->{$self->data_root} = $formatted;
+
+        if ($c->req->has_search_total_entries)
+        {
+            $output->{$self->total_entries_arg} = $c->req->search_total_entries + 0;
+        }
+
+        $c->stash->{response} = $output;
+    }
+    catch
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'a database error has occured.' });
+        $c->detach();
+    }
+}
+
+
+sub row_format_output { shift; shift; } # passthrough by default
+
+
+sub update_or_create :Private
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+    
+    if($c->req->has_objects)
+    {
+        $self->validate_objects($c);
+        $self->transact_objects($c, \&save_objects);
+    }
+    else
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'No objects on which to operate' });
+        $c->detach();
+    }
+}
+
+
+sub transact_objects
+{
+    $DB::single = 1;
+    my ($self, $c, $coderef) = @_;
+    
+    try
+    {
+        $self->stored_result_source->schema->txn_do
+        (
+            $coderef,
+            $c->req->objects
+        );
+    }
+    catch
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'a database error has occured.' });
+        $c->detach();
+    }
+}
+
+
+sub validate_objects
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+
+    try
+    {
+        foreach my $obj ($c->req->all_objects)
+        {
+            $obj->[1] = $self->validate_object($c, $obj);
+        }
+    }
+    catch
+    {
+        my $err = $_;
+        $c->log->error($err);
+        $err =~ s/\s+at\s+\/.+\n$//g;
+        $self->push_error($c, { message => $err });
+        $c->detach();
+    }
+}
+
+
+sub validate_object
+{
+    $DB::single = 1;
+    my ($self, $c, $obj) = @_;
+    my ($object, $params) = @$obj;
+
+    my %values;
+    my %requires_map = map
+    {
+        $_ => 1
+    } 
+    @{
+        ($object->in_storage) 
+        ? [] 
+        : $c->stash->{create_requires} || $self->create_requires
+    };
+    
+    my %allows_map = map
+    {
+        (ref $_) ? %{$_} : ($_ => 1)
+    } 
+    (
+        keys %requires_map, 
+        @{
+            ($object->in_storage) 
+            ? ($c->stash->{update_allows} || $self->update_allows) 
+            : ($c->stash->{create_allows} || $self->create_allows)
+        }
+    );
+
+    foreach my $key (keys %allows_map)
+    {
+        # check value defined if key required
+        my $allowed_fields = $allows_map{$key};
+        
+        if (ref $allowed_fields)
+        {
+            my $related_source = $object->result_source->related_source($key);
+            my $related_params = $params->{$key};
+            my %allowed_related_map = map { $_ => 1 } @$allowed_fields;
+            my $allowed_related_cols = ($allowed_related_map{'*'}) ? [$related_source->columns] : $allowed_fields;
+            
+            foreach my $related_col (@{$allowed_related_cols})
+            {
+                if (my $related_col_value = $related_params->{$related_col}) {
+                    $values{$key}{$related_col} = $related_col_value;
+                }
+            }
+        }
+        else 
+        {
+            my $value = $params->{$key};
+
+            if ($requires_map{$key})
+            {
+                unless (defined($value))
+                {
+                    # if not defined look for default
+                    $value = $object->result_source->column_info($key)->{default_value};
+                    unless (defined $value)
+                    {
+                        die "No value supplied for ${key} and no default";
+                    }
+                }
+            }
+            
+            # check for multiple values
+            if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false))
+            {
+                require Data::Dumper;
+                die "Multiple values for '${key}': ${\Data::Dumper::Dumper($value)}";
+            }
+
+            # check exists so we don't just end up with hash of undefs
+            # check defined to account for default values being used
+            $values{$key} = $value if exists $params->{$key} || defined $value;
+        }
+    }
+
+    unless (keys %values || !$object->in_storage) 
+    {
+        die 'No valid keys passed';
+    }
+
+    return \%values;  
+}
+
+
+sub delete :Private
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+    
+    if($c->req->has_objects)
+    {
+        $self->transact_objects($c, \&delete_objects);
+        $c->req->clear_objects;
+    }
+    else
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'No objects on which to operate' });
+        $c->detach();
+    }
+}
+
+
+# NOT A METHOD
+sub save_objects
+{
+    my ($objects) = @_;
+    die 'save_objects coderef had an invocant and shouldn\'t have had one' if blessed($objects);
+
+    foreach my $obj (@$objects)
+    {
+        my ($object, $params) = @$obj;
+
+        if ($object->in_storage) {
+            foreach my $key (keys %{$params}) {
+                my $value = $params->{$key};
+                if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false)) {
+                    my $related_params = delete $params->{$key};
+                    my $row = $object->find_related($key, {} , {});
+                    $row->update($related_params);
+                }
+            }
+            $object->update($params);
+        } else {
+            $object->set_columns($params);
+            $object->insert;
+        }
+    }
+}
+
+# NOT A METHOD
+sub delete_objects
+{
+    my ($objects) = @_;
+    die 'delete_objects coderef had an invocant and shouldn\'t have had one' if blessed($objects);
+$DB::single=1;
+    map { $_->[0]->delete } @$objects;
+}
+
+
+sub end :Private 
+{
+    $DB::single = 1;
+    my ($self, $c) = @_;
+
+    # check for errors
+    my $default_status;
+
+    # Check for errors caught elsewhere
+    if ( $c->res->status and $c->res->status != 200 ) {
+        $default_status = $c->res->status;
+        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
+    } elsif ($self->get_errors($c)) {
+        $c->stash->{response}->{messages} = $self->get_errors($c);
+        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
+        $default_status = 400;
+    } else {
+        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::true : 'true';
+        $default_status = 200;
+    }
+    
+    unless ($default_status == 200)
+    {
+        delete $c->stash->{response}->{$self->data_root};
+    }
+    elsif($self->return_object && $c->req->has_objects)
+    {
+        $DB::single = 1;
+        my $returned_objects = [];
+        map {my %inflated = $_->[0]->get_inflated_columns; push(@$returned_objects, \%inflated) } $c->req->all_objects;
+        $c->stash->{response}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
+    }
+
+    $c->res->status( $default_status || 200 );
+    $c->forward('serialize');
+}
+
+# from Catalyst::Action::Serialize
+sub serialize :ActionClass('Serialize') {
+    my ($self, $c) = @_;
+
+}
+
+
+sub push_error
+{
+    my ( $self, $c, $params ) = @_;
+    push( @{$c->stash->{_dbic_crud_errors}}, $params->{message} || 'unknown error' );
+}
+
+
+sub get_errors
+{
+    my ( $self, $c ) = @_;
+    return $c->stash->{_dbic_crud_errors};
+}
+
+
+1;
+
+__END__
+=pod
 
 =head1 NAME
 
-Catalyst::Controller::DBIC::API
+Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagically
+
+=head1 VERSION
+
+version 2.001001
 
 =head1 SYNOPSIS
 
   package MyApp::Controller::API::RPC::Artist;
-  use base qw/Catalyst::Controller::DBIC::API::RPC/;
+  use Moose;
+  BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
   __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rpc/rpc_base' } }, # define parent chain action and partpath
@@ -52,7 +595,7 @@ Catalyst::Controller::DBIC::API
 
 Easily provide common API endpoints based on your L<DBIx::Class> schema classes. Module provides both RPC and REST interfaces to base functionality. Uses L<Catalyst::Action::Serialize> and L<Catalyst::Action::Deserialize> to serialise response and/or deserialise request.
 
-=head1 GETTING STARTED
+=head1 OVERVIEW
 
 This document describes base functionlity such as list, create, delete, update and the setting of config attributes. L<Catalyst::Controller::DBIC::API::RPC> and L<Catalyst::Controller::DBIC::API::REST> describe details of provided endpoints to those base methods.
 
@@ -85,69 +628,68 @@ Generally it's better to have one controller for each DBIC source with the confi
 
 Note that the Chained, CaptureArgs and PathPart are just standard Catalyst configuration parameters and that then endpoint specified in Chained - in this case '/api/rpc/rpc_base' - must actually exist elsewhere in your application. See L<Catalyst::DispatchType::Chained> for more details.
 
-=head2 class
+Below are explanations for various configuration parameters. Please see L<Catalyst::Controller::DBIC::API::StaticArguments> for more details.
+
+=head3 class
 
 Whatever you would pass to $c->model to get a resultset for this class. MyAppDB::Track for example.
 
-head2 data_root
+=head3 data_root
 
 By default, the response data is serialized into $c->stash->{response}->{$self->data_root} and data_root defaults to 'list' to preserve backwards compatibility. This is now configuable to meet the needs of the consuming client.
 
-head2 use_json_boolean
+=head3 use_json_boolean
 
 By default, the response success status is set to a string value of "true" or "false". If this attribute is true, JSON::Any's true() and false() will be used instead. Note, this does not effect other internal processing of boolean values.
 
-head2 count_arg, page_arg, select_arg, search_arg, grouped_by_arg, ordered_by_arg, prefetch_arg, as_arg
+=head3 count_arg, page_arg, select_arg, search_arg, grouped_by_arg, ordered_by_arg, prefetch_arg, as_arg, total_entries_arg
 
 These attributes allow customization of the component to understand requests made by clients where these argument names are not flexible and cannot conform to this components defaults.
 
-=head2 create_requires
+=head3 create_requires
 
 Arrayref listing columns required to be passed to create in order for the request to be valid.
 
-=head2 create_allows
+=head3 create_allows
 
 Arrayref listing columns additional to those specified in create_requires that are not required to create but which create does allow. Columns passed to create that are not listed in create_allows or create_requires will be ignored.
 
-=head2 update_allows
+=head3 update_allows
 
 Arrayref listing columns that update will allow. Columns passed to update that are not listed here will be ignored.
 
-=head2 select
+=head3 select
 
 Arguments to pass to L<DBIx::Class::ResultSet/select> when performing search for L</list>.
 
-=head2 as
+=head3 as
 
 Complements arguments passed to L<DBIx::Class::ResultSet/select> when performing a search. This allows you to specify column names in the result for RDBMS functions, etc.
 
-=head2 select_exposes
+=head3 select_exposes
 
 Columns and related columns that are okay to return in the resultset since clients can request more or less information specified than the above select argument.
 
-=head2 prefetch
+=head3 prefetch
 
 Arguments to pass to L<DBIx::Class::ResultSet/prefetch> when performing search for L</list>.
 
-=head2 prefetch_allows
+=head3 prefetch_allows
 
 Arrayref listing relationships that are allowed to be prefetched.
 This is necessary to avoid denial of service attacks in form of
 queries which would return a large number of data
 and unwanted disclosure of data.
-Every element of the arrayref is one allowed parameter to prefetch.
-So for three searches, all requiring different prefetch parameters,
-three elements have to be passed to prefetch_allows in the controller.
 
-=head2 grouped_by
+=head3 grouped_by
 
 Arguments to pass to L<DBIx::Class::ResultSet/group_by> when performing search for L</list>.
 
-=head2 ordered_by
+=head3 ordered_by
 
 Arguments to pass to L<DBIx::Class::ResultSet/order_by> when performing search for L</list>.
 
-=head2 search_exposes
+=head3 search_exposes
 
 Columns and related columns that are okay to search on. For example if only the position column and all cd columns were to be allowed
 
@@ -181,68 +723,25 @@ and then in your custom resultset:
     my $rs = $self->SUPER::search(@_);
   }
 
-=head2 count
+=head3 count
 
 Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
-=head2 page
+=head3 page
 
 Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
 
-=head2 object_stash_key
-
-Object level methods such as delete and update stash the object in the stash. Specify the stash key you would like to use here. Defaults to 'object'.
-
-=head2 rs_stash_key
-
-List level methods such as list and create stash the class resultset in the stash. Specify the stash key you would like to use here. Defaults to 'class_rs'.
-
-=head2 setup_dbic_args_method
-
-This hook will allow you to alter the parameters before they are passed to $rs->search. 
-Here you can add additional attributes or alter the generated query. 
-
-Note that the method is passed ($self, $c, $params, $attrs) and must return [$params, $attrs]. Below is an example of basic usage:
-
-  __PACKAGE__->config(
-      ...,
-      setup_dbic_args_method => 'setup_dbic_args'
-  );
-
-  sub setup_dbic_args : Private {
-	  my ($self, $c, $params, $args) = @_;
-
-    # we only ever want to show items with position greater than 1
-	  $params->{position} = { '!=' => '1' };
-	  return [$params, $args];
-  }
-
-=head2 setup_list_method
-
-If you need to process the incoming parameters (for validation, access control,
-etc) you can configure an action to forward to.  This is called before the
-search is handed off to DBIC, so you can process the incoming request
-parameters, or add your own filters.  Below is an example of basic usage:
-
-  __PACKAGE__->config(
-      ...,
-      setup_list_method => 'filter_search_params'
-  );
-
-  sub filter_search_params : Private {
-      my ( $self, $c, $query ) = @_;
-      $query->{search}->{'user_id'} = $c->user->id;
-  }
-
-=head1 METHODS
-
-Note: see the individual interface classes - L<Catalyst::Controller::DBIC::API::RPC> and L<Catalyst::Controller::DBIC::API::REST> - for details of the endpoints to these abstract methods.
+=head1 PROTECTED_METHODS
 
 =head2 begin
+
+ :Private
 
 A begin method is provided to apply the L<Catalyst::Controller::DBIC::API::Request> role to $c->request, and perform deserialization and validation of request parameters
 
 =head2 setup
+
+ :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config')
 
 This action is the chain root of the controller. It must either be overridden or configured to provide a base pathpart to the action and also a parent action. For example, for class MyAppDB::Track you might have
 
@@ -262,24 +761,46 @@ This action is the chain root of the controller. It must either be overridden or
     $self->next::method($c);
   }
 
-This action will populate $c->stash->{$self->rs_stash_key} with $c->model($self->class) for other actions in the chain to use.
+This action will populate $c->req->current_result_set with $self->stored_result_source->resultset for other actions in the chain to use.
 
 =head2 object
 
-This action is the chain root for all object level actions (such as delete and update). Takes one argument which is passed to L<DBIx::Class::ResultSet/find>, if an object is returned then it is set in $c->stash->{$self->object_stash_key}.
-The move of sub object in version 1.004002 from RPC/REST to Base will break your code if you subclass from REST and had relied on the 'object' action being an ActionClass('REST').
+ :Chained('setup') :CaptureArgs(1) :PathPart('')
 
-=head2 create
+This action is the chain root for all object level actions (such as delete and update). If an identifier is passed it will be used to find that particular object and add it to the request's store of objects. Otherwise, the data stored at the data_root of the request_data will be interpreted as an array of objects on which to operate. If the hashes are missing an 'id' key, they will be considered a new object to be created, otherwise, the values in the hash will be used to perform an update. Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the stored objects.
 
-List level action chained from L</setup>. Checks $c->req->params for each column specified in the L</create_requires> and L</create_allows> parameters of the controller config. If all of the required columns are present then the object is created.
+=head2 object_lookup
 
-Does not populate the response with any additional information unless the return_object option is set to true, then the created object will be serialized within $c->stash->{response}->{$self->data_root}.
+This method provides the look up functionality for an object based on 'id'. It is passed the current $c and the $id to be used to perform the lookup. Dies if there is no provided $id or if no object was found.
+
+=head2 deserialize
+
+deserialize absorbs the request data and transforms it into useful bits by using CGI::Expand->expand_hash and a smattering of JSON::Any->from_json for a handful of arguments. Current only the following arguments are capable of being expressed as JSON:
+
+    search_arg
+    count_arg
+    page_arg
+    ordered_by_arg
+    grouped_by_arg
+    prefetch_arg
+
+It should be noted that arguments can used mixed modes in with some caveats. Each top level arg can be expressed as CGI::Expand with their immediate child keys expressed as JSON.
+
+=head2 inflate_request
+
+inflate_request is called at the end of deserialize to populate key portions of the request with the useful bits
 
 =head2 list
 
-List level action chained from L</setup>. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the class resultset. If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. L</select> of course supports the function/procedure calling semantics that L<DBIx::Class::ResultSet/select>. In order to have proper column names in the result, provide arguments in L</as> (which also follows L<DBIx::Class::ResultSet/as> semantics. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
+ :Private
 
-If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. You can use a JSON string as the 'search' parameter for maximum flexibility or use L</CGI::Expand> syntax. In the second case the request parameters are expanded into a structure and then $c->req->params->{search} is used as the search condition.
+List level action chained from L</setup>. List's steps are broken up into three distinct methods: L</list_munge_parameters>, L</list_perform_search>, and L</list_format_output>.
+
+The goal of this method is to call ->search() on the current_result_set, HashRefInflator the result, and return it in $c->stash->{response}->{$self->data_root}. Pleasee see the individual methods for more details on what actual processing takes place.
+
+If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. L</select> of course supports the function/procedure calling semantics that L<DBIx::Class::ResultSet/select>. In order to have proper column names in the result, provide arguments in L</as> (which also follows L<DBIx::Class::ResultSet/as> semantics. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
+
+If not all objects in the resultset are required then it's possible to pass conditions to the method as request parameters. You can use a JSON string as the 'search' parameter for maximum flexibility or use L<CGI::Expand> syntax. In the second case the request parameters are expanded into a structure and then used as the search condition.
 
 For example, these request parameters:
 
@@ -291,41 +812,83 @@ Would result in this search (where 'name' is a column of the schema class, 'cd' 
 
  $rs->search({ name => 'fred', 'cd.artist' => 'luke' }, { join => ['cd'] })
 
-Since version 1.004002 it is also possible to use a JSON string for expandeded parameters:
+It is also possible to use a JSON string for expandeded parameters:
 
  ?search.datetime={"-between":["2010-01-06 19:28:00","2010-01-07 19:28:00"]}
 
-Note that if pagination is needed, this can be achieved using a combination of the L</list_count> and L</list_page> parameters. For example:
+Note that if pagination is needed, this can be achieved using a combination of the L</count> and L</page> parameters. For example:
 
   ?page=2&count=20
 
 Would result in this search:
- 
+
  $rs->search({}, { page => 2, rows => 20 })
 
-The L</format_list> method is used to format the results, so override that as required.
+=head2 list_munge_parameters
 
-=head2 format_list
+list_munge_parameters is a noop by default. All arguments will be passed through without any manipulation. In order to successfully manipulate the parameters before the search is performed, simply access $c->req->search_parameters|search_attributes (ArrayRef and HashRef respectively), which correspond directly to ->search($parameters, $attributes). Parameter keys will be in already-aliased form.
 
-Used by L</list> to populate response based on class resultset. By default populates $c->stash->{response}->{$self->data_root} with a list of hashrefs representing each object in the resultset. Can be overidden to format the list as required.
+=head2 list_perform_search
 
-=head2 update
+list_perform_search executes the actual search. current_result_set is updated to contain the result returned from ->search. If paging was requested, search_total_entries will be set as well.
 
-Object level action chained from L</object>. Checks $c->req->params for each column specified in the L</update_allows> parameter of the controller config. If any of these columns are found in $c->req->params then the object set by L</object> is updated with those columns.
+=head2 list_format_output
 
-Does not populate the response with any additional information uness the return_object option is set to true, then the updated object will be serialized within $c->stash->{response}->{$self->data_root}.
+list_format_output prepares the response for transmission across the wire. A copy of the current_result_set is taken and its result_class is set to L<DBIx::Class::ResultClass::HashRefInflator>. Each row in the resultset is then iterated and passed to L</row_format_output> with the result of that call added to the output.
+
+=head2 row_format_output
+
+row_format_output is called each row of the inflated output generated from the search. It receives only one argument, the hashref that represents the row. By default, this method is merely a passthrough.
+
+=head2 update_or_create
+
+ :Private
+
+update_or_create is responsible for iterating any stored objects and performing updates or creates. Each object is first validated to ensure it meets the criteria specified in the L</create_requires> and L</create_allows> (or L</update_allows>) parameters of the controller config. The objects are then committed within a transaction via L</transact_objects>.
+
+=head2 transact_objects
+
+transact_objects performs the actual commit to the database via $schema->txn_do. This method accepts two arguments, the context and a coderef to be used within the transaction. All of the stored objects are passed as an arrayref for the only argument to the coderef.
+
+=head2 validate_objects
+
+This is a shortcut method for performing validation on all of the stored objects in the request. Each object's provided values (for create or update) are updated to the allowed values permitted by the various config parameters.
+
+=head2 validate_object
+
+validate_object takes the context and the object as an argument. It then filters the passed values in slot two of the tuple through the create|update_allows configured. It then returns those filtered values. Values that are not allowed are silently ignored. If there are no values for a particular key, no valid values at all, or multiple of the same key, this method will die.
 
 =head2 delete
 
-Object level action chained from L</object>. Will simply delete the object set by L</object>.
+ :Private
 
-Does not populate the response with any additional information.
+delete operates on the stored objects in the request. It first transacts the objects, deleting them in the database, and then clears the request store of objects.
 
 =head2 end
 
-$c->stash->{response}->{success} is set to 'true' or 'false' (or their respective JSON::Any values for true and false) regarding the success of the request. If the request failed, $c->stash->{response}->{messages} is set to an arrayref containing all error messages.
+ :Private
 
-Then the contents of $c->stash->{response} are serialized using L<Catalyst::Action::Serialize>.
+end performs the final manipulation of the response before it is serialized. This includes setting the success of the request both at the HTTP layer and JSON layer. If configured with return_object true, and there are stored objects as the result of create or update, those will be inflated according to the schema and get_inflated_columns
+
+=head2 push_error
+
+push_error stores an error message into the stash to be later retrieved by L</end>. Accepts a Dict[message => Str] parameter that defines the error message.
+
+=head2 get_errors
+
+get_errors returns all of the errors stored in the stash
+
+=head1 HELPER FUNCTIONS
+
+This functions are only helper functions and should have a void invocant. If they are called as methods, they will die. The only reason they are stored in the class is to allow for customization without rewriting the methods that make use of these helper functions.
+
+=head2 save_objects
+
+This helper function is used by update_or_create to perform the actual database manipulations.
+
+=head2 delete_objects
+
+This helper function is used by delete to perform the actual database delete of objects.
 
 =head1 EXTENDING
 
@@ -341,12 +904,12 @@ For example if you wanted create to return the JSON for the newly created object
   sub create :Chained('setup') :Args(0) :PathPart('create') {
     my ($self, $c) = @_;
 
-    # will set $c->stash->{created_object} if successful
+    # $c->req->all_objects will contain all of the created
     $self->next::method($c);
 
-    if ($c->stash->{created_object}) {    
+    if ($c->req->has_objects) {    
       # $c->stash->{response} will be serialized in the end action
-      %{$c->stash->{response}->{new_object}} = $c->stash->{created_object}->get_columns;
+      $c->stash->{response}->{$self->data_root} = [ map { { $_->get_inflated_columns } } ($c->req->all_objects) ] ;
     }
   }
 
@@ -357,7 +920,7 @@ For example if you wanted create to return the JSON for the newly created object
   BEGIN { extends 'MyApp::ControllerBase::DBIC::API::RPC' };
   ...
 
-It should be noted that the L</return_object> attribute will produce the above result for you, free of charge.
+It should be noted that the return_object attribute will produce the above result for you, free of charge.
 
 For REST the only difference besides the class names would be that create should be :Private rather than an endpoint.
 
@@ -371,34 +934,25 @@ It should be noted that version 1.004 and above makes a rapid depature from the 
 
 To this end, internally, this module now understands JSON boolean values (as represented by JSON::Any) and will Do The Right Thing in handling those values. This means you can have ColumnInflators installed that can covert between JSON::Any booleans and whatever your database wants for boolean values.
 
-Validation for various *_allows or *_exposes is now accomplished via Data::DPath::Validator with a lightly simplified, via subclass, Data::DPath::Validator::Visitor. The rough jist of the process goes as follows: Arguments provided to those attributes are fed into the Validator and Data::DPaths are generated. Then, incoming requests are validated against these paths generated. The validator is set in "loose" mode meaning only one path is required to match. for more information, please see L<Data::DPath::Validator> and more specifically L<Catalyst::Controller::DBIC::API::Validator>.
+Validation for various *_allows or *_exposes is now accomplished via Data::DPath::Validator with a lightly simplified, via subclass, Data::DPath::Validator::Visitor. The rough jist of the process goes as follows: Arguments provided to those attributes are fed into the Validator and Data::DPaths are generated. Then, incoming requests are validated against these paths generated. The validator is set in "loose" mode meaning only one path is required to match. For more information, please see L<Data::DPath::Validator> and more specifically L<Catalyst::Controller::DBIC::API::Validator>.
 
-All in all, significant efforts have been made to preserve backwards compatibility with previous versions. This means arguments to config and even internal structures (ie, the stash) should Just Work. This is accomplished by using L<MooseX::Aliases> to provide a mapping from old names to new names. Even the validator behavior /should/ be the same if not a bit more consistent. Internal validation of ->config arguments also happens much, much sooner. And, request parameters are validated as upfront as possible before ->search.
+Since 2.00100:
+Transactions are used. The stash is put aside in favor of roles applied to the request object with additional accessors.
+Error handling is now much more consistent with most errors immediately detaching.
+The internals are much easier to read and understand with lots more documentation.
 
-=head1 AUTHOR
-
-  Luke Saunders <luke.saunders@gmail.com>
-
-=head1 CONTRIBUTORS
+=head1 AUTHORS
 
   Nicholas Perez <nperez@cpan.org>
-
-  J. Shirley <jshirley@gmail.com>
-
-  Zbigniew Lukasiak <zzbbyy@gmail.com>
-
+  Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
 
-=head1 SPECIAL THANKS
+=head1 COPYRIGHT AND LICENSE
 
-This module was inspired by code written by Matt S Trout (mst) when we worked on a project together. In subsequent projects
-I found myself reproducing this design until eventually I decided to CPAN it. None of the original code remains, but the 
-idea is basically the same.
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
 
-=head1 LICENSE
-
-You may distribute this code under the same terms as Perl itself.
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
 
-1;

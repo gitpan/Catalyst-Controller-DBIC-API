@@ -10,10 +10,10 @@ my $content_type = [ 'Content-Type', 'application/x-www-form-urlencoded' ];
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 25;
+use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -35,8 +35,8 @@ my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update
 		$mech->request($req, $content_type);
 		cmp_ok( $mech->status, '==', 400, 'Attempt with invalid track id caught' );
 		
-		my $response = JSON::Syck::Load( $mech->content);
-		is_deeply( $response->{messages}, ['Invalid id'], 'correct message returned' );
+		my $response = JSON::Any->Load( $mech->content);
+		like( $response->{messages}->[0], qr/No object found for id/, 'correct message returned' );
 		
 		$track->discard_changes;
 		is_deeply({ $track->get_columns }, \%original_cols, 'no update occurred');
@@ -51,7 +51,7 @@ my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update
   $mech->request($req, $content_type);
   cmp_ok( $mech->status, '==', 400, 'Update with no keys causes error' );
 
-  my $response = JSON::Syck::Load( $mech->content);
+  my $response = JSON::Any->Load( $mech->content);
   is_deeply( $response->{messages}, ['No valid keys passed'], 'correct message returned' );
 
   $track->discard_changes;
@@ -65,7 +65,7 @@ my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update
   $mech->request($req, $content_type);
   cmp_ok( $mech->status, '==', 400, 'Update with no keys causes error' );
 
-  my $response = JSON::Syck::Load( $mech->content);
+  my $response = JSON::Any->Load( $mech->content);
   is_deeply( $response->{messages}, ['No valid keys passed'], 'correct message returned' );
 
   $track->discard_changes;
@@ -129,3 +129,5 @@ my $any_track_update_url = "$base/api/rpc/any/track/id/" . $track->id . "/update
   $track->discard_changes;
   is($track->get_column('position'), '14', 'Position changed');
 }
+
+done_testing();

@@ -13,7 +13,7 @@ use URI;
 use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -30,7 +30,7 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
 
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ position => { '!=' => '1' } })->all;
-  my $response = JSON::Syck::Load( $mech->content);
+  my $response = JSON::Any->Load( $mech->content);
   is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
 }
 

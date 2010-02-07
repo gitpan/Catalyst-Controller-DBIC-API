@@ -1,4 +1,35 @@
-Revision history for Catalyst-Controller-DBIC-API
+Revision history for Catalyst-Controller-DBIC-API: 2.001001
+
+2.001001  2010-02-06 19:35:56 America/Chicago
+**************************************************************
+** THIS RELEASE GUARANTEES TO BREAK BACKWARDS COMPATIBILITY **
+**************************************************************
+
+- Merge create and update into update_or_create
+- object is much advanced now:
+      + Identifier can be omitted, and data_root in the request is interpreted
+- Because of the above one object or several is now possible for update or create
+- Create and Update object validation now happens iteratively
+- Creates and Updates can be mixed inside a single bulk request
+- All modifying actions on the database occur within an all-or-nothing transaction
+- Much of the DBIC search parameter munging is properly moved to the RequestArguments 
+    Role in the form of a trigger on 'search' to populate 'search_parameters' and 
+    'search_attributes' which correspond directly to ->search($parameters, $attributes);
+- Error handling is now much more consistent, using Try::Tiny everywhere possible
+- Tests are now modernized and use JSON::Any
+- Extending is now explicitly done via Moose method modifiers
+- The only portion of the stash in use is to allow runtime definition of create/update_allows
+- list is now broken down into several steps:
+    + list_munge_parameters
+    + list_perform_search
+    + list_format_output
+    + row_format_output (which is just a passthrough per row)
+- Search can now take an array of hashrefs to give the ability to use the default 'OR' 
+- By default search_parameters is an ArrayRef[HashRef] which is pertinent to list_munge_parameters
+- More thorough documentation of the various bits and pieces.
+    + Documentation now uses Pod::Weaver and Plugin::PodWeaver (weaver.ini added)
+- The distribution is now managed by Dist::Zilla
+- And some more likely forgotten.
 
 1.004002
 - Implement 'as' as a complement to 'select'

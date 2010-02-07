@@ -1,26 +1,31 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-our $VERSION = '1.004002';
+our $VERSION = '2.001001';
+#ABSTRACT: Provides acessors for static resources
+
 use Moose::Role;
-use Moose::Util::TypeConstraints;
 use MooseX::Types::Moose(':all');
+use Catalyst::Controller::DBIC::API::Types(':all');
 use Try::Tiny;
 use namespace::autoclean;
 
 requires '_application';
 
-has 'class' => ( is => 'ro', isa => Str );
+
+has 'class' => ( is => 'ro', isa => Str, writer => '_set_class' );
+
 
 has 'stored_result_source' =>
 (
     is => 'ro',
-    isa => class_type('DBIx::Class::ResultSource'),
+    isa => ResultSource,
     lazy_build => 1,
 );
+
 
 has 'stored_model' =>
 (
     is => 'ro',
-    isa => class_type('DBIx::Class'),
+    isa => Model,
     lazy_build => 1,
 );
 
@@ -34,12 +39,14 @@ sub _build_stored_result_source
     return shift->stored_model->result_source();
 }
 
+
 sub check_has_column
 {
     my ($self, $col) = @_;
-    confess "Column '$col' does not exist in ResultSet '${\$self->class}'"
+    die "Column '$col' does not exist in ResultSet '${\$self->class}'"
         unless $self->stored_result_source->has_column($col);
 }
+
 
 sub check_has_relation
 {
@@ -65,6 +72,7 @@ sub check_has_relation
         return 1;
     }
 }
+
 
 sub check_column_relation
 {
@@ -95,3 +103,58 @@ sub check_column_relation
 }
 
 1;
+
+__END__
+=pod
+
+=head1 NAME
+
+Catalyst::Controller::DBIC::API::StoredResultSource - Provides acessors for static resources
+
+=head1 VERSION
+
+version 2.001001
+
+=head1 PUBLIC_ATTRIBUTES
+
+=head2 class is: ro, isa: Str
+
+class is the name of the class that is the model for this controller
+
+=head2 stored_result_source is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/ResultSource>
+
+This is the result source for the controller
+
+=head2 stored_model is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/Model>
+
+This is the model for the controller
+
+=head1 PUBLIC_METHODS
+
+=head2 check_has_column
+
+Convenience method for checking if the column exists in the result source
+
+=head2 check_has_relation
+
+check_has_relation meticulously delves into the result sources relationships to determine if the provided relation is valid. Accepts a relation name, and optional HashRef indicating a nested relationship. Iterates, and recurses through provided arguments until exhausted. Dies if at any time the relationship or column does not exist.
+
+=head2 check_column_relation
+
+Convenience method to first check if the provided argument is a valid relation (if it is a HashRef) or column. 
+
+=head1 AUTHORS
+
+  Nicholas Perez <nperez@cpan.org>
+  Luke Saunders <luke.saunders@gmail.com>
+  Alexander Hartmaier <abraxxa@cpan.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
+

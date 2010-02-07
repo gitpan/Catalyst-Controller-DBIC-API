@@ -1,9 +1,9 @@
 package RestTest::Controller::API::RPC::Artist;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::RPC/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rpc/rpc_base' } },
@@ -11,7 +11,7 @@ __PACKAGE__->config
       create_requires => ['name'],
       create_allows => ['name'],
       update_allows => ['name'],
-      list_prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
+      prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
       );
 
 1;

@@ -10,10 +10,10 @@ my $content_type = [ 'Content-Type', 'application/x-www-form-urlencoded' ];
 
 use RestTest;
 use DBICTest;
-use Test::More tests => 12;
+use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -29,9 +29,8 @@ my $producer_create_url = "$base/api/rpc/producer/create";
   }, 'Accept' => 'text/json' );
   $mech->request($req, $content_type);
   cmp_ok( $mech->status, '==', 400, 'attempt without required params caught' );
-
-  my $response = JSON::Syck::Load( $mech->content);
-  is_deeply( $response->{messages}, ['No value supplied for name and no default'], 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  like( $response->{messages}->[0], qr/No value supplied for name and no default/, 'correct message returned' );
 }
 
 # test default value used if default value exists
@@ -55,12 +54,13 @@ my $producer_create_url = "$base/api/rpc/producer/create";
   my $new_obj = $schema->resultset('Producer')->find({ name => 'king luke' });
   ok($new_obj, 'record created with specified name');
 
-  my $response = JSON::Syck::Load( $mech->content);
-  is_deeply( $response->{new_producer}, { $new_obj->get_columns }, 'json for new producer returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply( $response->{list}, { $new_obj->get_columns }, 'json for new producer returned' );
 }
 
 # test stash config handling
 {
+    $DB::single = 1;
   my $req = POST( $any_artist_create_url, {
 	  name => 'queen monkey'
   }, 'Accept' => 'text/json' );
@@ -70,7 +70,7 @@ my $producer_create_url = "$base/api/rpc/producer/create";
   my $new_obj = $schema->resultset('Artist')->find({ name => 'queen monkey' });
   ok($new_obj, 'record created with specified name');
 
-  my $response = JSON::Syck::Load( $mech->content);
+  my $response = JSON::Any->Load( $mech->content);
   is_deeply( $response, { success => 'true' }, 'json for new artist returned' );
 }
 
@@ -85,3 +85,5 @@ my $producer_create_url = "$base/api/rpc/producer/create";
   $mech->request($req, $content_type);
   cmp_ok( $mech->status, '==', 400, 'invalid param value produces error' );
 }
+
+done_testing();

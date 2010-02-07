@@ -1,25 +1,17 @@
 package RestTest::Controller::API::REST::Producer;
+our $VERSION = '2.001001';
+use Moose;
+BEGIN { extends 'Catalyst::Controller::DBIC::API::REST' }
 
-use strict;
-use warnings;
-use base qw/Catalyst::Controller::DBIC::API::REST/;
-use JSON::Syck;
+use namespace::autoclean;
 
 __PACKAGE__->config
     ( action => { setup => { PathPart => 'producer', Chained => '/api/rest/rest_base' } },
       class => 'RestTestDB::Producer',
       create_requires => ['name'],
       update_allows => ['name'],
-      list_returns => ['name']
+      select => ['name'],
+      return_object => 1,
       );
-
-sub create :Private {
-  my ($self, $c) = @_;
-  $self->next::method($c);
-
-  if ($c->stash->{created_object}) {
-    %{$c->stash->{response}->{new_producer}} = $c->stash->{created_object}->get_columns;
-  }
-}
 
 1;

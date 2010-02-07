@@ -1,37 +1,28 @@
 ---
-abstract: ~
+abstract: 'Provides a DBIx::Class web service automagically'
 author:
+  - 'Nicholas Perez <nperez@cpan.org>'
   - 'Luke Saunders <luke.saunders@gmail.com>'
-build_requires:
-  Catalyst::Model::DBIC::Schema: 0.2
-  ExtUtils::MakeMaker: 6.42
-  Test::More: 0.88
-  Test::WWW::Mechanize: 0.2
-  Test::WWW::Mechanize::Catalyst: 0.37
-configure_requires:
-  ExtUtils::MakeMaker: 6.42
-distribution_type: module
-generated_by: 'Module::Install version 0.91'
+  - 'Alexander Hartmaier <abraxxa@cpan.org>'
+generated_by: 'Dist::Zilla version 1.100160'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 name: Catalyst-Controller-DBIC-API
-no_index:
-  directory:
-    - inc
-    - t
 requires:
   CGI::Expand: 2.02
-  Catalyst::Action::REST: 0.6
-  Catalyst::Runtime: 5.701
+  Catalyst::Action::REST: 0.60
+  Catalyst::Model::DBIC::Schema: 0.20
+  Catalyst::Runtime: 5.7010
   DBIx::Class: 0.08103
   Data::DPath::Validator: 0.093411
+  ExtUtils::MakeMaker: 6.11
   JSON::Any: 1.19
-  MooseX::Aliases: 0.07
   Test::Deep: 0.104
-  perl: 5.6.1
+  Test::More: 0.88
+  Test::WWW::Mechanize: 0.20
+  Test::WWW::Mechanize::Catalyst: 0.37
 resources:
-  license: http://dev.perl.org/licenses/
-  repository: http://dev.catalyst.perl.org/repos/Catalyst/Catalyst-Controller-DBIC-API/
-version: 1.004002
+  repository: git://git.shadowcat.co.uk/catagits/Catalyst-Controller-DBIC-API
+version: 2.001001

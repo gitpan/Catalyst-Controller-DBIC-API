@@ -13,7 +13,7 @@ use URI;
 use Test::More;
 use Test::WWW::Mechanize::Catalyst 'RestTest';
 use HTTP::Request::Common;
-use JSON::Syck;
+use JSON::Any;
 
 my $mech = Test::WWW::Mechanize::Catalyst->new;
 ok(my $schema = DBICTest->init_schema(), 'got schema');
@@ -30,9 +30,8 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
 
   my @expected_response = map { { $_->get_columns } } $base_rs->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
-  is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 {
@@ -44,9 +43,8 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   $mech->request($req);
   cmp_ok( $mech->status, '==', 200, 'search on position okay' );
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ position => 1 })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
-  is_deeply( { list => \@expected_response, success => 'true' }, $response, 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply( $response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 {
@@ -59,8 +57,7 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   cmp_ok( $mech->status, '==', 400, 'search on title not okay' );
 
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ position => 1 })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
+  my $response = JSON::Any->Load( $mech->content);
   is($response->{success}, 'false', 'correct message returned');
   like($response->{messages}->[0], qr/is not an allowed search term/, 'correct message returned');
 }
@@ -75,8 +72,7 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   cmp_ok( $mech->status, '==', 400, 'search on title not okay' );
 
   my $expected_response = map { { $_->get_columns } } $base_rs->search({ position => 1 })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response);
+  my $response = JSON::Any->Load( $mech->content);
   is($response->{success}, 'false', 'correct message returned');
   like($response->{messages}->[0], qr/is not an allowed search term/, 'correct message returned');
 }
@@ -89,8 +85,7 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   }, 'Accept' => 'text/x-json' );
   $mech->request($req);
   cmp_ok( $mech->status, '==', 400, 'search on various cd fields not okay' );
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response);
+  my $response = JSON::Any->Load( $mech->content);
   is($response->{success}, 'false', 'correct message returned');
   like($response->{messages}->[0], qr/is not an allowed search term/, 'correct message returned');
 }
@@ -104,9 +99,8 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   $mech->request($req);
   cmp_ok( $mech->status, '==', 200, 'search on various cd fields okay' );
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ 'cd.year' => '1999', 'cd.title' => 'Spoonful of bees' }, { join => 'cd' })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
-  is_deeply({ success => 'true',list => \@expected_response }, $response, 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply($response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 {
@@ -118,9 +112,8 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   $mech->request($req);
   cmp_ok( $mech->status, '==', 200, 'search with custom col okay' );
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ 'cd.year' => '1999', 'cd.title' => 'Spoonful of bees' }, { join => 'cd' })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
-  is_deeply({ success => 'true',list => \@expected_response }, $response, 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply($response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 {
@@ -132,9 +125,8 @@ my $base_rs = $schema->resultset('Track')->search({}, { select => [qw/me.title m
   $mech->request($req);
   cmp_ok( $mech->status, '==', 200, 'search on artist field okay due to wildcard' );
   my @expected_response = map { { $_->get_columns } } $base_rs->search({ 'artist.name' => 'Random Boy Band' }, { join => { cd => 'artist' } })->all;
-  my $response = JSON::Syck::Load( $mech->content);
-  #use Data::Dumper; warn Dumper($response, \@expected_response);
-  is_deeply({ success => 'true',list => \@expected_response }, $response, 'correct message returned' );
+  my $response = JSON::Any->Load( $mech->content);
+  is_deeply($response, { list => \@expected_response, success => 'true' }, 'correct message returned' );
 }
 
 done_testing();
