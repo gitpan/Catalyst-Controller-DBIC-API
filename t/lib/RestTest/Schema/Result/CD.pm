@@ -1,6 +1,6 @@
 package # hide from PAUSE 
     RestTest::Schema::Result::CD;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 use base 'DBIx::Class::Core';
 

@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 #ABSTRACT: Provides controller level configuration arguments
 use Moose::Role;
@@ -44,6 +44,9 @@ has 'count_arg' => ( is => 'ro', isa => Str, default => 'list_count' );
 has 'page_arg' => ( is => 'ro', isa => Str, default => 'list_page' );
 
 
+has 'offset_arg' => ( is => 'ro', isa => Str, default => 'list_offset' );
+
+
 has 'select_arg' => ( is => 'ro', isa => Str, default => 'list_returns' );
 
 
@@ -85,7 +88,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 DESCRIPTION
 
@@ -113,6 +116,10 @@ count_arg controls how to reference 'count' in the the request_data
 =head2 page_arg is: ro, isa: Str, default: 'list_page'
 
 page_arg controls how to reference 'page' in the the request_data
+
+=head2 offset_arg is: ro, isa: Str, default: 'offset'
+
+offset_arg controls how to reference 'offset' in the the request_data
 
 =head2 select_arg is: ro, isa: Str, default: 'list_returns'
 

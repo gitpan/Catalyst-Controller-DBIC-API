@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Request::Context;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 #ABSTRACT: Provides additional context to the Request
 use Moose::Role;
@@ -44,7 +44,7 @@ Catalyst::Controller::DBIC::API::Request::Context - Provides additional context 
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 PUBLIC_ATTRIBUTES
 

@@ -1,9 +1,8 @@
 package Catalyst::Controller::DBIC::API::Request;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 #ABSTRACT: Provides a role to be applied to the Request object
 use Moose::Role;
-use MooseX::Aliases;
 use MooseX::Types::Moose(':all');
 use namespace::autoclean;
 
@@ -52,7 +51,7 @@ Catalyst::Controller::DBIC::API::Request - Provides a role to be applied to the 
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 DESCRIPTION
 

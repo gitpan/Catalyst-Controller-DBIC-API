@@ -1,6 +1,13 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.001001
+Revision history for Catalyst-Controller-DBIC-API: 2.001002
 
-2.001001  2010-02-06 19:35:56 America/Chicago
+2.001002  2010-02-09 01:01:57 America/Chicago
+
+- Fixed missing requirement for MooseX::Types::Structured
+- Fixed MooseX::Aliases usage (we don't any more)
+- Object inflation during end was broken out into its own method: each_object_inflate
+- Enable offset based paging
+
+2.001001
 **************************************************************
 ** THIS RELEASE GUARANTEES TO BREAK BACKWARDS COMPATIBILITY **
 **************************************************************

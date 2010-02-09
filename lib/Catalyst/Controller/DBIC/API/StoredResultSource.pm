@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 #ABSTRACT: Provides acessors for static resources
 
 use Moose::Role;
@@ -113,7 +113,7 @@ Catalyst::Controller::DBIC::API::StoredResultSource - Provides acessors for stat
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 PUBLIC_ATTRIBUTES
 

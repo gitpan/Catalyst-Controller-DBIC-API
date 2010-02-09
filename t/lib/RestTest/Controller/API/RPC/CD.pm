@@ -1,5 +1,5 @@
 package RestTest::Controller::API::RPC::CD;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC' }
 

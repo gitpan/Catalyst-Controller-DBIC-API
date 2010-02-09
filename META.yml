@@ -12,17 +12,18 @@ meta-spec:
 name: Catalyst-Controller-DBIC-API
 requires:
   CGI::Expand: 2.02
-  Catalyst::Action::REST: 0.60
+  Catalyst::Action::REST: 0.83
   Catalyst::Model::DBIC::Schema: 0.20
   Catalyst::Runtime: 5.7010
   DBIx::Class: 0.08103
   Data::DPath::Validator: 0.093411
   ExtUtils::MakeMaker: 6.11
   JSON::Any: 1.19
+  MooseX::Types::Structured: 0.20
   Test::Deep: 0.104
   Test::More: 0.88
   Test::WWW::Mechanize: 0.20
   Test::WWW::Mechanize::Catalyst: 0.37
 resources:
   repository: git://git.shadowcat.co.uk/catagits/Catalyst-Controller-DBIC-API
-version: 2.001001
+version: 2.001002

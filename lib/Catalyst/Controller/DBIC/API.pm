@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
 use Moose;
@@ -130,7 +130,7 @@ sub deserialize :ActionClass('Deserialize')
     {
         $req_params = CGI::Expand->expand_hash($c->req->params);
 
-        foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]})
+        foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->offset_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]})
         {
             # these params can also be composed of JSON
             # but skip if the parameter is not provided
@@ -228,7 +228,7 @@ sub list_perform_search
         $req->_set_current_result_set($rs);
 
         $req->_set_search_total_entries($req->current_result_set->pager->total_entries)
-            if $req->has_search_attributes && $req->search_attributes->{page};
+            if $req->has_search_attributes && (exists($req->search_attributes->{page}) && defined($req->search_attributes->{page}) && length($req->search_attributes->{page}));
     }
     catch
     {
@@ -481,7 +481,7 @@ sub delete_objects
 {
     my ($objects) = @_;
     die 'delete_objects coderef had an invocant and shouldn\'t have had one' if blessed($objects);
-$DB::single=1;
+
     map { $_->[0]->delete } @$objects;
 }
 
@@ -515,7 +515,7 @@ sub end :Private
     {
         $DB::single = 1;
         my $returned_objects = [];
-        map {my %inflated = $_->[0]->get_inflated_columns; push(@$returned_objects, \%inflated) } $c->req->all_objects;
+        push(@$returned_objects, $self->each_object_inflate($c, $_)) for map { $_->[0] } $c->req->all_objects;
         $c->stash->{response}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
     }
 
@@ -523,11 +523,16 @@ sub end :Private
     $c->forward('serialize');
 }
 
-# from Catalyst::Action::Serialize
-sub serialize :ActionClass('Serialize') {
-    my ($self, $c) = @_;
 
+sub each_object_inflate
+{
+    my ($self, $c, $object) = @_;
+
+    return { $object->get_inflated_columns };
 }
+
+# from Catalyst::Action::Serialize
+sub serialize :ActionClass('Serialize') { }
 
 
 sub push_error
@@ -555,7 +560,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 SYNOPSIS
 
@@ -869,6 +874,12 @@ delete operates on the stored objects in the request. It first transacts the obj
  :Private
 
 end performs the final manipulation of the response before it is serialized. This includes setting the success of the request both at the HTTP layer and JSON layer. If configured with return_object true, and there are stored objects as the result of create or update, those will be inflated according to the schema and get_inflated_columns
+
+=head2 each_object_inflate
+
+each_object_inflate executes during L</end> and allows hooking into the process of inflating the objects to return in the response. Receives, the context, and the object as arguments.
+
+This only executes if L</return_object> if set and if there are any objects to actually return.
 
 =head2 push_error
 

@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::RPC;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
 use Moose;
@@ -64,7 +64,7 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 DESCRIPTION
 

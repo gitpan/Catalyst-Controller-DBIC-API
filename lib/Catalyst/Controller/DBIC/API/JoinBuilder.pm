@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::JoinBuilder;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 #ABSTRACT: Provides a helper class to automatically keep track of joins in complex searches
 use Moose;
@@ -88,7 +88,7 @@ Catalyst::Controller::DBIC::API::JoinBuilder - Provides a helper class to automa
 
 =head1 VERSION
 
-version 2.001001
+version 2.001002
 
 =head1 DESCRIPTION
 

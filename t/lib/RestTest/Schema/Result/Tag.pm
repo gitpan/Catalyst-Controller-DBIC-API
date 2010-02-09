@@ -1,6 +1,6 @@
 package # hide from PAUSE 
     RestTest::Schema::Result::Tag;
-our $VERSION = '2.001001';
+our $VERSION = '2.001002';
 
 use base qw/DBIx::Class::Core/;
 
