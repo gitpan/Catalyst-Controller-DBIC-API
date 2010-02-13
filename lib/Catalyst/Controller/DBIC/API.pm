@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API;
-our $VERSION = '2.001002';
+our $VERSION = '2.001003';
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
 use Moose;
@@ -286,7 +286,7 @@ sub update_or_create :Private
     if($c->req->has_objects)
     {
         $self->validate_objects($c);
-        $self->transact_objects($c, \&save_objects);
+        $self->transact_objects($c, sub { $self->save_objects($c, @_) } );
     }
     else
     {
@@ -437,7 +437,7 @@ sub delete :Private
     
     if($c->req->has_objects)
     {
-        $self->transact_objects($c, \&delete_objects);
+        $self->transact_objects($c, sub { $self->delete_objects($c, @_) });
         $c->req->clear_objects;
     }
     else
@@ -449,40 +449,81 @@ sub delete :Private
 }
 
 
-# NOT A METHOD
 sub save_objects
 {
-    my ($objects) = @_;
-    die 'save_objects coderef had an invocant and shouldn\'t have had one' if blessed($objects);
+    my ($self, $c, $objects) = @_;
 
     foreach my $obj (@$objects)
     {
-        my ($object, $params) = @$obj;
-
-        if ($object->in_storage) {
-            foreach my $key (keys %{$params}) {
-                my $value = $params->{$key};
-                if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false)) {
-                    my $related_params = delete $params->{$key};
-                    my $row = $object->find_related($key, {} , {});
-                    $row->update($related_params);
-                }
-            }
-            $object->update($params);
-        } else {
-            $object->set_columns($params);
-            $object->insert;
-        }
+        $self->save_object($c, $obj);
     }
 }
 
-# NOT A METHOD
+
+sub save_object
+{
+    my ($self, $c, $obj) = @_;
+
+    my ($object, $params) = @$obj;
+
+    if ($object->in_storage)
+    {
+        $self->update_object_from_params($c, $object, $params);
+    }
+    else 
+    {
+        $self->insert_object_from_params($c, $object, $params);
+    }
+
+}
+
+
+sub update_object_from_params
+{
+    my ($self, $c, $object, $params) = @_;
+
+    foreach my $key (keys %$params)
+    {
+        my $value = $params->{$key};
+        if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false))
+        {
+            $self->update_object_relation($c, $object, delete $params->{$key}, $key);
+        }
+    }
+    
+    $object->update($params);
+}
+
+
+sub update_object_relation
+{
+    my ($self, $c, $object, $related_params, $relation) = @_;
+    my $row = $object->find_related($relation, {} , {});
+    $row->update($related_params);
+}
+
+
+sub insert_object_from_params
+{
+    my ($self, $c, $object, $params) = @_;
+    $object->set_columns($params);
+    $object->insert;
+}
+
+
 sub delete_objects
 {
-    my ($objects) = @_;
-    die 'delete_objects coderef had an invocant and shouldn\'t have had one' if blessed($objects);
+    my ($self, $c, $objects) = @_;
 
-    map { $_->[0]->delete } @$objects;
+    map { $self->delete_object($c, $_->[0]) } @$objects;
+}
+
+
+sub delete_object
+{
+    my ($self, $c, $object) = @_;
+
+    $object->delete;
 }
 
 
@@ -560,7 +601,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.001002
+version 2.001003
 
 =head1 SYNOPSIS
 
@@ -849,7 +890,7 @@ row_format_output is called each row of the inflated output generated from the s
 
  :Private
 
-update_or_create is responsible for iterating any stored objects and performing updates or creates. Each object is first validated to ensure it meets the criteria specified in the L</create_requires> and L</create_allows> (or L</update_allows>) parameters of the controller config. The objects are then committed within a transaction via L</transact_objects>.
+update_or_create is responsible for iterating any stored objects and performing updates or creates. Each object is first validated to ensure it meets the criteria specified in the L</create_requires> and L</create_allows> (or L</update_allows>) parameters of the controller config. The objects are then committed within a transaction via L</transact_objects> using a closure around L</save_objects>.
 
 =head2 transact_objects
 
@@ -867,7 +908,35 @@ validate_object takes the context and the object as an argument. It then filters
 
  :Private
 
-delete operates on the stored objects in the request. It first transacts the objects, deleting them in the database, and then clears the request store of objects.
+delete operates on the stored objects in the request. It first transacts the objects, deleting them in the database using L</transact_objects> and a closure around L</delete_objects>, and then clears the request store of objects.
+
+=head2 save_objects
+
+This method is used by update_or_create to perform the actual database manipulations. It iterates each object calling L</save_object>.
+
+=head2 save_object
+
+save_object first checks to see if the object is already in storage. If so, it calls L</update_object_from_params> otherwise it calls L</insert_object_from_params>
+
+=head2 update_object_from_params
+
+update_object_from_params iterates through the params to see if any of them are pertinent to relations. If so it calls L</update_object_relation> with the object, and the relation parameters. Then it calls ->upbdate on the object.
+
+=head2 update_object_relation
+
+update_object_relation finds the relation to the object, then calls ->update with the specified parameters
+
+=head2 insert_object_from_params
+
+insert_object_from_params sets the columns for the object, then calls ->insert
+
+=head2 delete_objects
+
+delete_objects iterates through each object calling L</delete_object>
+
+=head2 delete_object
+
+Performs the actual ->delete on the object
 
 =head2 end
 
@@ -888,18 +957,6 @@ push_error stores an error message into the stash to be later retrieved by L</en
 =head2 get_errors
 
 get_errors returns all of the errors stored in the stash
-
-=head1 HELPER FUNCTIONS
-
-This functions are only helper functions and should have a void invocant. If they are called as methods, they will die. The only reason they are stored in the class is to allow for customization without rewriting the methods that make use of these helper functions.
-
-=head2 save_objects
-
-This helper function is used by update_or_create to perform the actual database manipulations.
-
-=head2 delete_objects
-
-This helper function is used by delete to perform the actual database delete of objects.
 
 =head1 EXTENDING
 

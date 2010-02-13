@@ -26,4 +26,4 @@ requires:
   Test::WWW::Mechanize::Catalyst: 0.37
 resources:
   repository: git://git.shadowcat.co.uk/catagits/Catalyst-Controller-DBIC-API
-version: 2.001002
+version: 2.001003

@@ -1,6 +1,6 @@
 package # hide from PAUSE 
     RestTest::Schema::ResultSet::Track;
-our $VERSION = '2.001002';
+our $VERSION = '2.001003';
 
 use base 'RestTest::Schema::ResultSet';
 

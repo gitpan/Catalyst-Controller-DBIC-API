@@ -1,5 +1,5 @@
 package RestTest::Model::RestTestDB;
-our $VERSION = '2.001002';
+our $VERSION = '2.001003';
 
 use strict;
 use warnings;

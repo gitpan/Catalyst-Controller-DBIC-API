@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Types;
-our $VERSION = '2.001002';
+our $VERSION = '2.001003';
 
 #ABSTRACT: Provides shortcut types and coercions for DBIC::API
 use warnings;
@@ -18,11 +18,11 @@ coerce GroupedBy, from Str, via { [$_] };
 
 
 subtype OrderedBy, as Maybe[ArrayRef[Str|HashRef|ScalarRef]];
-coerce OrderedBy, from Str, via { [$_] };
+coerce OrderedBy, from Str, via { [$_] }, from HashRef, via { [$_] };
 
 
 subtype SelectColumns, as Maybe[ArrayRef[Str|HashRef]];
-coerce SelectColumns, from Str, via { [$_] };
+coerce SelectColumns, from Str, via { [$_] }, from HashRef, via { [$_] };
 
 
 subtype SearchParameters, as Maybe[ArrayRef[HashRef]];
@@ -54,7 +54,7 @@ Catalyst::Controller::DBIC::API::Types - Provides shortcut types and coercions f
 
 =head1 VERSION
 
-version 2.001002
+version 2.001003
 
 =head1 TYPES
 
