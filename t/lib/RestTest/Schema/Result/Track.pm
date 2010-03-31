@@ -1,8 +1,9 @@
-package # hide from PAUSE 
+package # hide from PAUSE
     RestTest::Schema::Result::Track;
-our $VERSION = '2.001003';
 
 use base 'DBIx::Class::Core';
+
+__PACKAGE__->load_components(qw/ InflateColumn::DateTime /);
 __PACKAGE__->table('track');
 __PACKAGE__->add_columns(
   'trackid' => {

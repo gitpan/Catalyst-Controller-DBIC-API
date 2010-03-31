@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002001';
 #ABSTRACT: Provides acessors for static resources
 
 use Moose::Role;
@@ -30,7 +31,7 @@ has 'stored_model' =>
 );
 
 sub _build_stored_model
-{   
+{
     return $_[0]->_application->model($_[0]->class);
 }
 
@@ -51,7 +52,7 @@ sub check_has_column
 sub check_has_relation
 {
     my ($self, $rel, $other, $nest, $static) = @_;
-    
+
     $nest ||= $self->stored_result_source;
 
     if(HashRef->check($other))
@@ -77,7 +78,7 @@ sub check_has_relation
 sub check_column_relation
 {
     my ($self, $col_rel, $static) = @_;
-    
+
     if(HashRef->check($col_rel))
     {
         try
@@ -113,7 +114,7 @@ Catalyst::Controller::DBIC::API::StoredResultSource - Provides acessors for stat
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 PUBLIC_ATTRIBUTES
 
@@ -141,13 +142,14 @@ check_has_relation meticulously delves into the result sources relationships to 
 
 =head2 check_column_relation
 
-Convenience method to first check if the provided argument is a valid relation (if it is a HashRef) or column. 
+Convenience method to first check if the provided argument is a valid relation (if it is a HashRef) or column.
 
 =head1 AUTHORS
 
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

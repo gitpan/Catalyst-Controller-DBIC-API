@@ -1,9 +1,10 @@
 package Catalyst::Controller::DBIC::API;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::VERSION = '2.002001';
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
 use Moose;
-BEGIN { extends 'Catalyst::Controller'; }
+BEGIN { extends 'Catalyst::Controller::ActionRole'; }
 
 use CGI::Expand ();
 use DBIx::Class::ResultClass::HashRefInflator;
@@ -26,25 +27,104 @@ __PACKAGE__->config();
 
 sub begin :Private
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
-    
+
     Catalyst::Controller::DBIC::API::Request->meta->apply($c->req)
         unless Moose::Util::does_role($c->req, 'Catalyst::Controller::DBIC::API::Request');
-    $c->forward('deserialize');
 }
 
 
-sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config')
+sub setup :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config') {}
+
+
+sub deserialize :Chained('setup') :CaptureArgs(0) :PathPart('') :ActionClass('Deserialize')
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
+    my $req_params;
 
-    $c->req->_set_current_result_set($self->stored_result_source->resultset);
+    if ($c->req->data && scalar(keys %{$c->req->data}))
+    {
+        $req_params = $c->req->data;
+    }
+    else
+    {
+        $req_params = CGI::Expand->expand_hash($c->req->params);
+
+        foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->offset_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]})
+        {
+            # these params can also be composed of JSON
+            # but skip if the parameter is not provided
+            next if not exists $req_params->{$param};
+            # find out if CGI::Expand was involved
+            if (ref $req_params->{$param} eq 'HASH')
+            {
+                for my $key ( keys %{$req_params->{$param}} )
+                {
+                    try
+                    {
+                        my $deserialized = JSON::Any->from_json($req_params->{$param}->{$key});
+                        $req_params->{$param}->{$key} = $deserialized;
+                    }
+                    catch
+                    {
+                        $c->log->debug("Param '$param.$key' did not deserialize appropriately: $_")
+                        if $c->debug;
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    my $deserialized = JSON::Any->from_json($req_params->{$param});
+                    $req_params->{$param} = $deserialized;
+                }
+                catch
+                {
+                    $c->log->debug("Param '$param' did not deserialize appropriately: $_")
+                    if $c->debug;
+                }
+            }
+        }
+    }
+
+    $self->inflate_request($c, $req_params);
 }
 
 
-sub object :Chained('setup') :CaptureArgs(1) :PathPart('')
+sub generate_rs
+{
+    my ($self, $c) = @_;
+    return $self->stored_result_source->resultset;
+}
+
+
+sub inflate_request
+{
+    my ($self, $c, $params) = @_;
+
+    try
+    {
+        # set static arguments
+        $c->req->_set_controller($self);
+
+        # set request arguments
+        $c->req->_set_request_data($params);
+
+        # set the current resultset
+        $c->req->_set_current_result_set($self->generate_rs($c));
+
+    }
+    catch
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => $_ });
+        $c->detach();
+    }
+}
+
+
+sub object_with_id :Chained('deserialize') :CaptureArgs(1) :PathPart('')
 {
 	my ($self, $c, $id) = @_;
 
@@ -52,34 +132,54 @@ sub object :Chained('setup') :CaptureArgs(1) :PathPart('')
     unless(defined($vals))
     {
         # no data root, assume the request_data itself is the payload
-        $vals = [$c->req->request_data || {}];
-    }
-    elsif(reftype($vals) eq 'HASH')
-    {
-        $vals = [ $vals ];
+        $vals = $c->req->request_data;
     }
 
-    if(defined($id))
+    try
     {
-        try
-        {
-            # there can be only one set of data
-            $c->req->add_object([$self->object_lookup($c, $id), $vals->[0]]);
-        }
-        catch
-        {
-            $c->log->error($_);
-            $self->push_error($c, { message => $_ });
-            $c->detach();
-        }
+        # there can be only one set of data
+        $c->req->add_object([$self->object_lookup($c, $id), $vals]);
     }
-    else
+    catch
     {
-        unless(reftype($vals) eq 'ARRAY')
+        $c->log->error($_);
+        $self->push_error($c, { message => $_ });
+        $c->detach();
+    }
+}
+
+
+sub objects_no_id :Chained('deserialize') :CaptureArgs(0) :PathPart('')
+{
+    my ($self, $c) = @_;
+
+    if($c->req->has_request_data)
+    {
+        my $data = $c->req->request_data;
+        my $vals;
+
+        if(exists($data->{$self->data_root}) && defined($data->{$self->data_root}))
         {
-            $c->log->error('Invalid request data');
-            $self->push_error($c, { message => 'Invalid request data' });
-            $c->detach();
+            my $root = $data->{$self->data_root};
+            if(reftype($root) eq 'ARRAY')
+            {
+                $vals = $root;
+            }
+            elsif(reftype($root) eq 'HASH')
+            {
+                $vals = [$root];
+            }
+            else
+            {
+                $c->log->error('Invalid request data');
+                $self->push_error($c, { message => 'Invalid request data' });
+                $c->detach();
+            }
+        }
+        else
+        {
+            # no data root, assume the request_data itself is the payload
+            $vals = [$c->req->request_data];
         }
 
         foreach my $val (@$vals)
@@ -116,94 +216,16 @@ sub object_lookup
 }
 
 
-sub deserialize :ActionClass('Deserialize')
+sub list
 {
-    $DB::single = 1;
-    my ($self, $c) = @_;
-    my $req_params;
-
-    if ($c->req->data && scalar(keys %{$c->req->data}))
-    {
-        $req_params = $c->req->data;
-    }
-    else 
-    {
-        $req_params = CGI::Expand->expand_hash($c->req->params);
-
-        foreach my $param (@{[$self->search_arg, $self->count_arg, $self->page_arg, $self->offset_arg, $self->ordered_by_arg, $self->grouped_by_arg, $self->prefetch_arg]})
-        {
-            # these params can also be composed of JSON
-            # but skip if the parameter is not provided
-            next if not exists $req_params->{$param};
-            # find out if CGI::Expand was involved
-            if (ref $req_params->{$param} eq 'HASH')
-            {
-                for my $key ( keys %{$req_params->{$param}} )
-                {
-                    try
-                    {
-                        my $deserialized = JSON::Any->from_json($req_params->{$param}->{$key});
-                        $req_params->{$param}->{$key} = $deserialized;
-                    }
-                    catch
-                    { 
-                        $c->log->debug("Param '$param.$key' did not deserialize appropriately: $_")
-                        if $c->debug;
-                    }
-                }
-            }
-            else
-            {
-                try
-                {
-                    my $deserialized = JSON::Any->from_json($req_params->{$param});
-                    $req_params->{$param} = $deserialized;
-                }
-                catch
-                { 
-                    $c->log->debug("Param '$param' did not deserialize appropriately: $_")
-                    if $c->debug;
-                }
-            }
-        }
-    }
-    
-    $self->inflate_request($c, $req_params);
-}
-
-
-sub inflate_request
-{
-    $DB::single = 1;
-    my ($self, $c, $params) = @_;
-
-    try
-    {
-        # set static arguments
-        $c->req->_set_controller($self); 
-
-        # set request arguments
-        $c->req->_set_request_data($params);
-        
-    }
-    catch
-    {
-        $c->log->error($_);
-        $self->push_error($c, { message => $_ });
-        $c->detach();
-    }
-    
-}
-
-
-sub list :Private 
-{
-    $DB::single = 1;
     my ($self, $c) = @_;
 
     $self->list_munge_parameters($c);
     $self->list_perform_search($c);
     $self->list_format_output($c);
+
+    # make sure there are no objects lingering
+    $c->req->clear_objects();
 }
 
 
@@ -212,16 +234,15 @@ sub list_munge_parameters { } # noop by default
 
 sub list_perform_search
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
-    
-    try 
+
+    try
     {
         my $req = $c->req;
-        
+
         my $rs = $req->current_result_set->search
         (
-            $req->search_parameters, 
+            $req->search_parameters,
             $req->search_attributes
         );
 
@@ -241,22 +262,21 @@ sub list_perform_search
 
 sub list_format_output
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
 
     my $rs = $c->req->current_result_set->search;
     $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
-    
+
     try
     {
         my $output = {};
         my $formatted = [];
-        
+
         foreach my $row ($rs->all)
         {
-            push(@$formatted, $self->row_format_output($row));
+            push(@$formatted, $self->row_format_output($c, $row));
         }
-        
+
         $output->{$self->data_root} = $formatted;
 
         if ($c->req->has_search_total_entries)
@@ -275,14 +295,34 @@ sub list_format_output
 }
 
 
-sub row_format_output { shift; shift; } # passthrough by default
-
-
-sub update_or_create :Private
+sub row_format_output
 {
-    $DB::single = 1;
+    my ($self, $c, $row) = @_;
+    return $row; # passthrough by default
+}
+
+
+sub item
+{
     my ($self, $c) = @_;
-    
+
+    if($c->req->count_objects != 1)
+    {
+        $c->log->error($_);
+        $self->push_error($c, { message => 'No objects on which to operate' });
+        $c->detach();
+    }
+    else
+    {
+        $c->stash->{response}->{$self->item_root} = $self->each_object_inflate($c, $c->req->get_object(0)->[0]);
+    }
+}
+
+
+sub update_or_create
+{
+    my ($self, $c) = @_;
+
     if($c->req->has_objects)
     {
         $self->validate_objects($c);
@@ -299,9 +339,8 @@ sub update_or_create :Private
 
 sub transact_objects
 {
-    $DB::single = 1;
     my ($self, $c, $coderef) = @_;
-    
+
     try
     {
         $self->stored_result_source->schema->txn_do
@@ -321,7 +360,6 @@ sub transact_objects
 
 sub validate_objects
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
 
     try
@@ -335,7 +373,7 @@ sub validate_objects
     {
         my $err = $_;
         $c->log->error($err);
-        $err =~ s/\s+at\s+\/.+\n$//g;
+        $err =~ s/\s+at\s+.+\n$//g;
         $self->push_error($c, { message => $err });
         $c->detach();
     }
@@ -344,7 +382,6 @@ sub validate_objects
 
 sub validate_object
 {
-    $DB::single = 1;
     my ($self, $c, $obj) = @_;
     my ($object, $params) = @$obj;
 
@@ -352,22 +389,22 @@ sub validate_object
     my %requires_map = map
     {
         $_ => 1
-    } 
+    }
     @{
-        ($object->in_storage) 
-        ? [] 
+        ($object->in_storage)
+        ? []
         : $c->stash->{create_requires} || $self->create_requires
     };
-    
+
     my %allows_map = map
     {
         (ref $_) ? %{$_} : ($_ => 1)
-    } 
+    }
     (
-        keys %requires_map, 
+        keys %requires_map,
         @{
-            ($object->in_storage) 
-            ? ($c->stash->{update_allows} || $self->update_allows) 
+            ($object->in_storage)
+            ? ($c->stash->{update_allows} || $self->update_allows)
             : ($c->stash->{create_allows} || $self->create_allows)
         }
     );
@@ -376,22 +413,22 @@ sub validate_object
     {
         # check value defined if key required
         my $allowed_fields = $allows_map{$key};
-        
+
         if (ref $allowed_fields)
         {
             my $related_source = $object->result_source->related_source($key);
             my $related_params = $params->{$key};
             my %allowed_related_map = map { $_ => 1 } @$allowed_fields;
             my $allowed_related_cols = ($allowed_related_map{'*'}) ? [$related_source->columns] : $allowed_fields;
-            
+
             foreach my $related_col (@{$allowed_related_cols})
             {
-                if (my $related_col_value = $related_params->{$related_col}) {
+                if (defined(my $related_col_value = $related_params->{$related_col})) {
                     $values{$key}{$related_col} = $related_col_value;
                 }
             }
         }
-        else 
+        else
         {
             my $value = $params->{$key};
 
@@ -407,7 +444,7 @@ sub validate_object
                     }
                 }
             }
-            
+
             # check for multiple values
             if (ref($value) && !($value == JSON::Any::true || $value == JSON::Any::false))
             {
@@ -421,20 +458,19 @@ sub validate_object
         }
     }
 
-    unless (keys %values || !$object->in_storage) 
+    unless (keys %values || !$object->in_storage)
     {
         die 'No valid keys passed';
     }
 
-    return \%values;  
+    return \%values;
 }
 
 
-sub delete :Private
+sub delete
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
-    
+
     if($c->req->has_objects)
     {
         $self->transact_objects($c, sub { $self->delete_objects($c, @_) });
@@ -470,7 +506,7 @@ sub save_object
     {
         $self->update_object_from_params($c, $object, $params);
     }
-    else 
+    else
     {
         $self->insert_object_from_params($c, $object, $params);
     }
@@ -490,7 +526,7 @@ sub update_object_from_params
             $self->update_object_relation($c, $object, delete $params->{$key}, $key);
         }
     }
-    
+
     $object->update($params);
 }
 
@@ -499,15 +535,35 @@ sub update_object_relation
 {
     my ($self, $c, $object, $related_params, $relation) = @_;
     my $row = $object->find_related($relation, {} , {});
-    $row->update($related_params);
+
+    if ($row) {
+        $row->update($related_params);
+    }
+    else {
+        $object->create_related($relation, $related_params);
+    }
 }
 
 
 sub insert_object_from_params
 {
     my ($self, $c, $object, $params) = @_;
-    $object->set_columns($params);
+
+    my %rels;
+    while (my ($k, $v) = each %{ $params }) {
+        if (ref $v && !($v == JSON::Any::true || $v == JSON::Any::false)) {
+            $rels{$k} = $v;
+        }
+        else {
+            $object->set_column($k => $v);
+        }
+    }
+
     $object->insert;
+
+    while (my ($k, $v) = each %rels) {
+        $object->create_related($k, $v);
+    }
 }
 
 
@@ -527,9 +583,8 @@ sub delete_object
 }
 
 
-sub end :Private 
+sub end :Private
 {
-    $DB::single = 1;
     my ($self, $c) = @_;
 
     # check for errors
@@ -547,14 +602,13 @@ sub end :Private
         $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::true : 'true';
         $default_status = 200;
     }
-    
+
     unless ($default_status == 200)
     {
         delete $c->stash->{response}->{$self->data_root};
     }
     elsif($self->return_object && $c->req->has_objects)
     {
-        $DB::single = 1;
         my $returned_objects = [];
         push(@$returned_objects, $self->each_object_inflate($c, $_)) for map { $_->[0] } $c->req->all_objects;
         $c->stash->{response}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
@@ -569,7 +623,7 @@ sub each_object_inflate
 {
     my ($self, $c, $object) = @_;
 
-    return { $object->get_inflated_columns };
+    return { $object->get_columns };
 }
 
 # from Catalyst::Action::Serialize
@@ -601,7 +655,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 SYNOPSIS
 
@@ -744,9 +798,9 @@ Columns and related columns that are okay to search on. For example if only the 
 You can also use this to allow custom columns should you wish to allow them through in order to be caught by a custom resultset. For example:
 
   package RestTest::Controller::API::RPC::TrackExposed;
-  
+
   ...
-  
+
   __PACKAGE__->config
     ( ...,
       search_exposes => [qw/position title custom_column/],
@@ -755,9 +809,9 @@ You can also use this to allow custom columns should you wish to allow them thro
 and then in your custom resultset:
 
   package RestTest::Schema::ResultSet::Track;
-  
+
   use base 'RestTest::Schema::ResultSet';
-  
+
   sub search {
     my $self = shift;
     my ($clause, $params) = @_;
@@ -779,12 +833,6 @@ Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L
 
 =head1 PROTECTED_METHODS
 
-=head2 begin
-
- :Private
-
-A begin method is provided to apply the L<Catalyst::Controller::DBIC::API::Request> role to $c->request, and perform deserialization and validation of request parameters
-
 =head2 setup
 
  :Chained('specify.in.subclass.config') :CaptureArgs(0) :PathPart('specify.in.subclass.config')
@@ -792,10 +840,11 @@ A begin method is provided to apply the L<Catalyst::Controller::DBIC::API::Reque
 This action is the chain root of the controller. It must either be overridden or configured to provide a base pathpart to the action and also a parent action. For example, for class MyAppDB::Track you might have
 
   package MyApp::Controller::API::RPC::Track;
-  use base qw/Catalyst::Controller::DBIC::API::RPC/;
+  use Moose;
+  BEGIN { extends 'Catalyst::Controller::DBIC::API::RPC'; }
 
   __PACKAGE__->config
-    ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } }, 
+    ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } },
 	...
   );
 
@@ -807,19 +856,11 @@ This action is the chain root of the controller. It must either be overridden or
     $self->next::method($c);
   }
 
-This action will populate $c->req->current_result_set with $self->stored_result_source->resultset for other actions in the chain to use.
-
-=head2 object
-
- :Chained('setup') :CaptureArgs(1) :PathPart('')
-
-This action is the chain root for all object level actions (such as delete and update). If an identifier is passed it will be used to find that particular object and add it to the request's store of objects. Otherwise, the data stored at the data_root of the request_data will be interpreted as an array of objects on which to operate. If the hashes are missing an 'id' key, they will be considered a new object to be created, otherwise, the values in the hash will be used to perform an update. Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the stored objects.
-
-=head2 object_lookup
-
-This method provides the look up functionality for an object based on 'id'. It is passed the current $c and the $id to be used to perform the lookup. Dies if there is no provided $id or if no object was found.
+This action does nothing by default.
 
 =head2 deserialize
+
+ :Chained('setup') :CaptureArgs(0) :PathPart('') :ActionClass('Deserialize')
 
 deserialize absorbs the request data and transforms it into useful bits by using CGI::Expand->expand_hash and a smattering of JSON::Any->from_json for a handful of arguments. Current only the following arguments are capable of being expressed as JSON:
 
@@ -830,19 +871,37 @@ deserialize absorbs the request data and transforms it into useful bits by using
     grouped_by_arg
     prefetch_arg
 
-It should be noted that arguments can used mixed modes in with some caveats. Each top level arg can be expressed as CGI::Expand with their immediate child keys expressed as JSON.
+It should be noted that arguments can used mixed modes in with some caveats. Each top level arg can be expressed as CGI::Expand with their immediate child keys expressed as JSON when sending the data application/x-www-form-urlencoded. Otherwise, you can send content as raw json and it will be deserialized as is with no CGI::Expand expasion.
+
+=head2 generate_rs
+
+generate_rs is used by inflate_request to generate the resultset stored in the current request. It receives $c as its only argument. And by default it merely returns the resultset from the stored_result_source on the controller. Override this method if you need to manipulate the default implementation of getting the resultset from the controller.
 
 =head2 inflate_request
 
 inflate_request is called at the end of deserialize to populate key portions of the request with the useful bits
 
+=head2 object_with_id
+
+ :Chained('deserialize') :CaptureArgs(1) :PathPart('')
+
+This action is the chain root for all object level actions (such as delete and update) that operate on a single identifer. The provided identifier will be used to find that particular object and add it to the request's store of objects. Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the stored objects.
+
+=head2 objects_no_id
+
+ :Chained('deserialize') :CaptureArgs(0) :PathPart('')
+
+This action is the chain root for object level actions (such as create, update, or delete) that can involve more than one object. The data stored at the data_root of the request_data will be interpreted as an array of hashes on which to operate. If the hashes are missing an 'id' key, they will be considered a new object to be created. Otherwise, the values in the hash will be used to perform an update. As a special case, a single hash sent will be coerced into an array. Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the stored objects.
+
+=head2 object_lookup
+
+This method provides the look up functionality for an object based on 'id'. It is passed the current $c and the $id to be used to perform the lookup. Dies if there is no provided $id or if no object was found.
+
 =head2 list
 
- :Private
+list's steps are broken up into three distinct methods: L</list_munge_parameters>, L</list_perform_search>, and L</list_format_output>.
 
-List level action chained from L</setup>. List's steps are broken up into three distinct methods: L</list_munge_parameters>, L</list_perform_search>, and L</list_format_output>.
-
-The goal of this method is to call ->search() on the current_result_set, HashRefInflator the result, and return it in $c->stash->{response}->{$self->data_root}. Pleasee see the individual methods for more details on what actual processing takes place.
+The goal of this method is to call ->search() on the current_result_set, HashRefInflator the result, and return it in $c->stash->{response}->{$self->data_root}. Please see the individual methods for more details on what actual processing takes place.
 
 If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. L</select> of course supports the function/procedure calling semantics that L<DBIx::Class::ResultSet/select>. In order to have proper column names in the result, provide arguments in L</as> (which also follows L<DBIx::Class::ResultSet/as> semantics. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
 
@@ -873,6 +932,7 @@ Would result in this search:
 =head2 list_munge_parameters
 
 list_munge_parameters is a noop by default. All arguments will be passed through without any manipulation. In order to successfully manipulate the parameters before the search is performed, simply access $c->req->search_parameters|search_attributes (ArrayRef and HashRef respectively), which correspond directly to ->search($parameters, $attributes). Parameter keys will be in already-aliased form.
+To store the munged parameters call $c->req->_set_search_parameters($newparams) and $c->req->_set_search_attributes($newattrs).
 
 =head2 list_perform_search
 
@@ -884,11 +944,13 @@ list_format_output prepares the response for transmission across the wire. A cop
 
 =head2 row_format_output
 
-row_format_output is called each row of the inflated output generated from the search. It receives only one argument, the hashref that represents the row. By default, this method is merely a passthrough.
+row_format_output is called each row of the inflated output generated from the search. It receives two arguments, the catalyst context and the hashref that represents the row. By default, this method is merely a passthrough.
+
+=head2 item
+
+item will return a single object called by identifier in the uri. It will be inflated via each_object_inflate.
 
 =head2 update_or_create
-
- :Private
 
 update_or_create is responsible for iterating any stored objects and performing updates or creates. Each object is first validated to ensure it meets the criteria specified in the L</create_requires> and L</create_allows> (or L</update_allows>) parameters of the controller config. The objects are then committed within a transaction via L</transact_objects> using a closure around L</save_objects>.
 
@@ -905,8 +967,6 @@ This is a shortcut method for performing validation on all of the stored objects
 validate_object takes the context and the object as an argument. It then filters the passed values in slot two of the tuple through the create|update_allows configured. It then returns those filtered values. Values that are not allowed are silently ignored. If there are no values for a particular key, no valid values at all, or multiple of the same key, this method will die.
 
 =head2 delete
-
- :Private
 
 delete operates on the stored objects in the request. It first transacts the objects, deleting them in the database using L</transact_objects> and a closure around L</delete_objects>, and then clears the request store of objects.
 
@@ -940,8 +1000,6 @@ Performs the actual ->delete on the object
 
 =head2 end
 
- :Private
-
 end performs the final manipulation of the response before it is serialized. This includes setting the success of the request both at the HTTP layer and JSON layer. If configured with return_object true, and there are stored objects as the result of create or update, those will be inflated according to the schema and get_inflated_columns
 
 =head2 each_object_inflate
@@ -957,6 +1015,14 @@ push_error stores an error message into the stash to be later retrieved by L</en
 =head2 get_errors
 
 get_errors returns all of the errors stored in the stash
+
+=head1 PRIVATE_METHODS
+
+=head2 begin
+
+ :Private
+
+begin is provided in the base class to setup the Catalyst Request object, by applying the DBIC::API::Request role.
 
 =head1 EXTENDING
 
@@ -975,12 +1041,11 @@ For example if you wanted create to return the JSON for the newly created object
     # $c->req->all_objects will contain all of the created
     $self->next::method($c);
 
-    if ($c->req->has_objects) {    
+    if ($c->req->has_objects) {
       # $c->stash->{response} will be serialized in the end action
       $c->stash->{response}->{$self->data_root} = [ map { { $_->get_inflated_columns } } ($c->req->all_objects) ] ;
     }
   }
-
 
   package MyApp::Controller::API::RPC::Track;
   ...
@@ -990,11 +1055,9 @@ For example if you wanted create to return the JSON for the newly created object
 
 It should be noted that the return_object attribute will produce the above result for you, free of charge.
 
-For REST the only difference besides the class names would be that create should be :Private rather than an endpoint.
-
 Similarly you might want create, update and delete to all forward to the list action once they are done so you can refresh your view. This should also be simple enough.
 
-If more extensive customization is required, it is recommened to peer into the roles that comprise the system and make use 
+If more extensive customization is required, it is recommened to peer into the roles that comprise the system and make use
 
 =head1 NOTES
 
@@ -1014,6 +1077,7 @@ The internals are much easier to read and understand with lots more documentatio
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

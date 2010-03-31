@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::REST;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::REST::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::REST::VERSION = '2.002001';
 
 #ABSTRACT: Provides a REST interface to DBIx::Class
 use Moose;
@@ -14,39 +15,41 @@ __PACKAGE__->config(
     });
 
 
-sub base : Chained('setup') PathPart('') ActionClass('REST') Args {
+sub update_or_create_objects : Chained('objects_no_id') PathPart('') Does('MatchRequestMethod') Method('POST') Method('PUT') Args(0)
+{
 	my ( $self, $c ) = @_;
-
+    $self->update_or_create($c);
 }
 
-sub base_PUT {
+sub delete_many_objects : Chained('objects_no_id') PathPart('') Does('MatchRequestMethod') Method('DELETE') Args(0)
+{
 	my ( $self, $c ) = @_;
-    
-    $c->forward('object');
-    return if $self->get_errors($c);
-    $c->forward('update_or_create');
+    $self->delete($c);
 }
 
-sub base_POST {
+sub list_objects : Chained('objects_no_id') PathPart('') Does('MatchRequestMethod') Method('GET') Args(0)
+{
 	my ( $self, $c ) = @_;
-
-    $c->forward('object');
-    return if $self->get_errors($c);
-    $c->forward('update_or_create');
+    $self->list($c);
 }
 
-sub base_DELETE {
+
+sub update_or_create_one_object : Chained('object_with_id') PathPart('') Does('MatchRequestMethod') Method('POST') Method('PUT') Args(0)
+{
 	my ( $self, $c ) = @_;
-    $DB::single =1;
-    $c->forward('object');
-    return if $self->get_errors($c);
-    $c->forward('delete');
+    $self->update_or_create($c);
 }
 
-sub base_GET {
+sub delete_one_object : Chained('object_with_id') PathPart('') Does('MatchRequestMethod') Method('DELETE') Args(0)
+{
 	my ( $self, $c ) = @_;
+    $self->delete($c);
+}
 
-	$c->forward('list');
+sub list_one_object : Chained('object_with_id') PathPart('') Does('MatchRequestMethod') Method('GET') Args(0)
+{
+	my ( $self, $c ) = @_;
+    $self->item($c);
 }
 
 1;
@@ -60,16 +63,16 @@ Catalyst::Controller::DBIC::API::REST - Provides a REST interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 DESCRIPTION
 
-Provides a REST style API interface to the functionality described in L<Catalyst::Controller::DBIC::API>. 
+Provides a REST style API interface to the functionality described in L<Catalyst::Controller::DBIC::API>.
 
 By default provides the following endpoints:
 
-  $base (accepts PUT and GET)
-  $base/[identifier] (accepts POST and DELETE)
+  $base (operates on lists of objects and accepts GET, PUT, POST and DELETE)
+  $base/[identifier] (operates on a single object and accepts GET, PUT, POST and DELETE)
 
 Where $base is the URI described by L</setup>, the chain root of the controller, and the request type will determine the L<Catalyst::Controller::DBIC::API> method to forward.
 
@@ -84,27 +87,40 @@ CaptureArgs: 0
 As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the chain root of the controller but has no pathpart or chain parent defined by default, so these must be defined in order for the controller to function. The neatest way is normally to define these using the controller's config.
 
   __PACKAGE__->config
-    ( action => { setup => { PathPart => 'track', Chained => '/api/rest/rest_base' } }, 
+    ( action => { setup => { PathPart => 'track', Chained => '/api/rest/rest_base' } },
 	...
   );
 
-=head2 base
+=head2 no_id
 
-Chained: L</setup>
+Chained: L</objects_no_id>
+PathPart: none
+CaptureArgs: 0
+
+Calls list level methods described in L<Catalyst::Controller::DBIC::API> as follows:
+
+DELETE: L<Catalyst::Controller::DBIC::API/delete>
+POST/PUT: L<Catalyst::Controller::DBIC::API/update_or_create>
+GET: forwards to L<Catalyst::Controller::DBIC::API/list>
+
+=head2 with_id
+
+Chained: L</object_with_id>
 PathPart: none
 CaptureArgs: 0
 
 Forwards to list level methods described in L<Catalyst::Controller::DBIC::API> as follows:
 
-DELETE: forwards to L<Catalyst::Controller::DBIC::API/object> then L<Catalyst::Controller::DBIC::API/delete>
-POST/PUT: forwards to L<Catalyst::Controller::DBIC::API/object> then L<Catalyst::Controller::DBIC::API/update_or_create>
-GET: forwards to L<Catalyst::Controller::DBIC::API/list>
+DELETE: L<Catalyst::Controller::DBIC::API/delete>
+POST/PUT: L<Catalyst::Controller::DBIC::API/update_or_create>
+GET: forwards to L<Catalyst::Controller::DBIC::API/item>
 
 =head1 AUTHORS
 
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

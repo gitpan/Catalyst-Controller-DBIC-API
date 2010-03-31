@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::Validator;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::Validator::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::Validator::VERSION = '2.002001';
 #ABSTRACT: Provides validation services for inbound requests against whitelisted parameters
 use Moose;
 use namespace::autoclean;
@@ -17,7 +18,8 @@ Catalyst::Controller::DBIC::API::Validator->meta->make_immutable;
 
 ###############################################################################
 package Catalyst::Controller::DBIC::API::Visitor;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::Visitor::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::Visitor::VERSION = '2.002001';
 
 use Moose;
 use namespace::autoclean;
@@ -87,7 +89,7 @@ around visit_hash => sub
 around visit_value => sub
 {
     my ($orig, $self, $val) = @_;
-    
+
     if($self->value_type eq 'NONE')
     {
         $self->dive();
@@ -100,7 +102,7 @@ around visit_value => sub
     {
         $self->append_text($val);
         warn 'VALUE: ' . $self->current_template if DEBUG;
-    }    
+    }
     else
     {
         $self->$orig($val);
@@ -122,13 +124,14 @@ Catalyst::Controller::DBIC::API::Validator - Provides validation services for in
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 AUTHORS
 
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

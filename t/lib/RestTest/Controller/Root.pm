@@ -1,5 +1,4 @@
 package RestTest::Controller::Root;
-our $VERSION = '2.001003';
 
 use strict;
 use warnings;
@@ -38,7 +37,7 @@ sub default : Private {
 
 Attempt to render a view, if needed.
 
-=cut 
+=cut
 
 sub end : Private {}
 

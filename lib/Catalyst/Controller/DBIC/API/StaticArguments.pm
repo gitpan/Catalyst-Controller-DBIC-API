@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002001';
 
 #ABSTRACT: Provides controller level configuration arguments
 use Moose::Role;
@@ -18,7 +19,7 @@ foreach my $var (qw/create_requires create_allows update_requires update_allows/
         traits => ['Array'],
         default => sub { [] },
         trigger => sub
-        {   
+        {
             my ($self, $new) = @_;
             $self->check_column_relation($_, 1) for @$new;
         },
@@ -68,6 +69,9 @@ has 'prefetch_arg' => ( is => 'ro', isa => Str, default => 'list_prefetch' );
 has 'data_root' => ( is => 'ro', isa => Str, default => 'list');
 
 
+has 'item_root' => ( is => 'ro', isa => Str, default => 'data');
+
+
 has 'total_entries_arg' => ( is => 'ro', isa => Str, default => 'totalcount' );
 
 
@@ -88,7 +92,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 DESCRIPTION
 
@@ -145,9 +149,14 @@ ordered_by_arg controls how to reference 'ordered_by' in the the request_data
 
 prefetch_arg controls how to reference 'prefetch' in the the request_data
 
-=head2 data_root is: ro, isa: Str, default: 'listt'
+=head2 data_root is: ro, isa: Str, default: 'list'
 
 data_root controls how to reference where the data is in the the request_data
+
+=head2 item_root is: ro, isa: Str, default: 'data'
+
+item_root controls how to reference where the data for single object
+requests is in the the request_data
 
 =head2 total_entries_arg is: ro, isa: Str, default: 'totalcount'
 
@@ -166,6 +175,7 @@ return_object controls whether the results of create/update are serialized and r
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

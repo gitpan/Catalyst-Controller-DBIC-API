@@ -1,6 +1,5 @@
 package # hide from PAUSE
     RestTest::Schema;
-our $VERSION = '2.001003';
 
 use base qw/DBIx::Class::Schema/;
 

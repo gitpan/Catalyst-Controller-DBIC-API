@@ -1,4 +1,19 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.001003
+Revision history for Catalyst-Controller-DBIC-API: 2.002001
+
+2.002001  2010-04-01 01:41:11 Europe/Berlin
+
+- Remove debugging code and other noise from tests
+- Fixed some typos and code cleanups
+- Added possibility to fetch a single object by id + tests using 'item'
+- Added item_root attribute which defaults to 'data' and is used as data root for 'item'
+- Break out bulk actions into their own methods for RPC
+- Restore identifer vs. no identifer for REST chains
+- Chain dispatching has now been fixed to not be as hackish as before
+- Shift around where the current result set is set. setup() now does /nothing/ by default other than be a chain anchor
+- Tests added for updating related keys via REST
+- generate_rs is now used to get the default resultset inside inflate_request
+- No longer uses Catalyst::Action::REST to do dispatching instead uses ActionRole and MatchRequestMethod
+- PLEASE THOROUGHLY TEST AS SOME BEHAVIOR MAY HAVE BEEN ALTERED SUBTLY WHEN DEALING WITH BULK vs SINGLE ACTIONS
 
 2.001003  2010-02-12 19:01:56 America/Chicago
 

@@ -1,5 +1,4 @@
 package RestTest::Controller::API;
-our $VERSION = '2.001003';
 
 use strict;
 use warnings;

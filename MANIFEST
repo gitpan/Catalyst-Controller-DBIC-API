@@ -49,15 +49,16 @@ t/release-pod-coverage.t
 t/release-pod-syntax.t
 t/rest/create.t
 t/rest/delete.t
+t/rest/item.t
 t/rest/list.t
 t/rest/update.t
 t/rpc/create.t
 t/rpc/delete.t
+t/rpc/item.t
 t/rpc/list.t
 t/rpc/list_json_search.t
 t/rpc/list_prefetch.t
 t/rpc/list_search_allows.t
 t/rpc/setup_dbic_args.t
 t/rpc/update.t
-t/var/DBIxClass.db
 weaver.ini

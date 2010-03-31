@@ -10,14 +10,14 @@ use Catalyst::Runtime '5.70';
 #         -Debug: activates the debug mode for very useful log messages
 #   ConfigLoader: will load the configuration from a YAML file in the
 #                 application's home directory
-# Static::Simple: will serve static files from the application's root 
+# Static::Simple: will serve static files from the application's root
 #                 directory
 
 use Catalyst;
 
 our $VERSION = '0.01';
 
-# Configure the application. 
+# Configure the application.
 #
 # Note that settings in RestTest.yml (or other external
 # configuration file that you set up manually) take precedence
@@ -31,6 +31,15 @@ __PACKAGE__->config( name => 'RestTest' );
 # Start the application
 __PACKAGE__->setup;
 
+my $logger = Class::MOP::Class->create(
+    'MyLog',
+    methods => {
+        (map { ($_ => sub { () }), ("is_${_}" => sub { () }) } qw(debug info warn error fatal)),
+        (map { ($_ => sub { () }) } qw(level levels enable disable abort)),
+    },
+);
+
+__PACKAGE__->log($logger->new_object);
 
 =head1 NAME
 

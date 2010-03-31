@@ -1,5 +1,4 @@
 package RestTest::Controller::API::REST::Track;
-our $VERSION = '2.001003';
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API::REST' }
 
@@ -10,7 +9,7 @@ __PACKAGE__->config
       class => 'RestTestDB::Track',
       create_requires => ['cd', 'title' ],
       create_allows => ['cd', 'title', 'position' ],
-      update_allows => ['title', 'position']
+      update_allows => ['title', 'position', { cd => ['*'] }],
       );
 
 1;

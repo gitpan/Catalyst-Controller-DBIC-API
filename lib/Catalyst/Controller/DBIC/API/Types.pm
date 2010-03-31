@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::Types;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::Types::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::Types::VERSION = '2.002001';
 
 #ABSTRACT: Provides shortcut types and coercions for DBIC::API
 use warnings;
@@ -54,7 +55,7 @@ Catalyst::Controller::DBIC::API::Types - Provides shortcut types and coercions f
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 TYPES
 
@@ -113,6 +114,7 @@ Shortcut for model objects
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

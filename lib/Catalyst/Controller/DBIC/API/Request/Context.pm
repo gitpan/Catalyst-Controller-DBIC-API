@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request::Context;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.002001';
 
 #ABSTRACT: Provides additional context to the Request
 use Moose::Role;
@@ -15,13 +16,14 @@ has objects =>
     isa => ArrayRef[ Tuple[ Object, Maybe[HashRef] ] ],
     traits => [ 'Array' ],
     default => sub { [] },
-    handles => 
+    handles =>
     {
         all_objects => 'elements',
         add_object => 'push',
         count_objects => 'count',
         has_objects => 'count',
         clear_objects => 'clear',
+        get_object => 'get',
     },
 );
 
@@ -44,7 +46,7 @@ Catalyst::Controller::DBIC::API::Request::Context - Provides additional context 
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 PUBLIC_ATTRIBUTES
 
@@ -67,6 +69,7 @@ Stores the current ResultSet derived from the initial L<Catalyst::Controller::DB
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

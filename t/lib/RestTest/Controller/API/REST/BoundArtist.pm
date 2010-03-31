@@ -1,5 +1,4 @@
 package RestTest::Controller::API::REST::BoundArtist;
-our $VERSION = '2.001003';
 use Moose;
 BEGIN { extends 'RestTest::Controller::API::REST::Artist'; }
 

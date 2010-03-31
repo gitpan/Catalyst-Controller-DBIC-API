@@ -1,10 +1,8 @@
-package # hide from PAUSE 
+package # hide from PAUSE
     RestTest::Schema::Result::Artist;
-our $VERSION = '2.001003';
 
-use base 'DBIx::Class';
+use base 'DBIx::Class::Core';
 
-__PACKAGE__->load_components('Core');
 __PACKAGE__->table('artist');
 __PACKAGE__->add_columns(
   'artistid' => {

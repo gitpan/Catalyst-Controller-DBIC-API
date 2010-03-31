@@ -1,12 +1,13 @@
 package Catalyst::Controller::DBIC::API::RPC;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002001';
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API'; }
 
 __PACKAGE__->config(
-    'action'    => { object => { PathPart => 'id' } }, 
+    'action'    => { object_with_id => { PathPart => 'id' } },
     'default'   => 'application/json',
     'stash_key' => 'response',
     'map'       => {
@@ -24,33 +25,52 @@ sub index : Chained('setup') PathPart('') Args(0) {
 }
 
 
-sub create :Chained('setup') :PathPart('create') :Args(0)
+sub create :Chained('objects_no_id') :PathPart('create') :Args(0)
 {
 	my ($self, $c) = @_;
-    $c->forward('object');
-    return if $self->get_errors($c);
-    $c->forward('update_or_create');
+    $self->update_or_create($c);
 }
 
 
-sub list :Chained('setup') :PathPart('list') :Args(0) {
+sub list :Chained('deserialize') :PathPart('list') :Args(0)
+{
 	my ($self, $c) = @_;
-
-        $self->next::method($c);
+    $self->next::method($c);
 }
 
 
-sub update :Chained('object') :PathPart('update') :Args(0) {
-	my ($self, $c) = @_;
-
-    $c->forward('update_or_create');
+sub item :Chained('object_with_id') :PathPart('') :Args(0)
+{
+    my ($self, $c) = @_;
+    $self->next::method($c);
 }
 
 
-sub delete :Chained('object') :PathPart('delete') :Args(0) {
-	my ($self, $c) = @_;
+sub update :Chained('object_with_id') :PathPart('update') :Args(0)
+{
+    my ($self, $c) = @_;
+    $self->update_or_create($c);
+}
 
-        $self->next::method($c);
+
+sub delete :Chained('object_with_id') :PathPart('delete') :Args(0)
+{
+    my ($self, $c) = @_;
+    $self->next::method($c);
+}
+
+
+sub update_bulk :Chained('objects_no_id') :PathPart('update') :Args(0)
+{
+    my ($self, $c) = @_;
+    $self->update_or_create($c);
+}
+
+
+sub delete_bulk :Chained('objects_no_id') :PathPart('delete') :Args(0)
+{
+    my ($self, $c) = @_;
+    $self->next::method($c);
 }
 
 1;
@@ -64,16 +84,17 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 DESCRIPTION
 
-Provides an RPC API interface to the functionality described in L<Catalyst::Controller::DBIC::API>. 
+Provides an RPC API interface to the functionality described in L<Catalyst::Controller::DBIC::API>.
 
 By default provides the following endpoints:
 
   $base/create
   $base/list
+  $base/id/[identifier]
   $base/id/[identifier]/delete
   $base/id/[identifier]/update
 
@@ -90,21 +111,13 @@ CaptureArgs: 0
 As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the chain root of the controller but has no pathpart or chain parent defined by default, so these must be defined in order for the controller to function. The neatest way is normally to define these using the controller's config.
 
   __PACKAGE__->config
-    ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } }, 
+    ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } },
 	...
   );
 
-=head2 object
-
-Chained: L</setup>
-PathPart: object
-CaptureArgs: 1
-
-Provides an chain point to the functionality described in L<Catalyst::Controller::DBIC::API/object>. All object level endpoints should use this as their chain root.
-
 =head2 create
 
-Chained: L</setup>
+Chained: L</objects_no_id>
 PathPart: create
 CaptureArgs: 0
 
@@ -112,33 +125,58 @@ Provides an endpoint to the functionality described in L<Catalyst::Controller::D
 
 =head2 list
 
-Chained: L</setup>
+Chained: L</deserialize>
 PathPart: list
 CaptureArgs: 0
 
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/list>.
 
+=head2 item
+
+Chained: L</object_with_id>
+PathPart: ''
+Args: 0
+
+Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/item>.
+
 =head2 update
 
-Chained: L</object>
+Chained: L</object_with_id>
 PathPart: update
-CaptureArgs: 0
+Args: 0
 
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create>.
 
 =head2 delete
 
-Chained: L</object>
+Chained: L</object_with_id>
 PathPart: delete
-CaptureArgs: 0
+Args: 0
 
 Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/delete>.
+
+=head2 update_bulk
+
+Chained: L</objects_no_id>
+PathPart: update
+Args: 0
+
+Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create> for multiple objects.
+
+=head2 delete_bulk
+
+Chained: L</objects_no_id>
+PathPart: delete
+Args: 0
+
+Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/delete> for multiple objects.
 
 =head1 AUTHORS
 
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::JoinBuilder;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::JoinBuilder::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::JoinBuilder::VERSION = '2.002001';
 
 #ABSTRACT: Provides a helper class to automatically keep track of joins in complex searches
 use Moose;
@@ -52,7 +53,7 @@ has name =>
 sub _build_joins
 {
     my ($self) = @_;
-    
+
     my $parent;
     while(my $found = $self->parent)
     {
@@ -88,7 +89,7 @@ Catalyst::Controller::DBIC::API::JoinBuilder - Provides a helper class to automa
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 DESCRIPTION
 
@@ -129,6 +130,7 @@ _build_joins finds the top parent in the structure and then recursively iterates
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 

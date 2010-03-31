@@ -1,5 +1,6 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-our $VERSION = '2.001003';
+$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002001';
+$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002001';
 
 #ABSTRACT: Provides Request argument validation
 use MooseX::Role::Parameterized;
@@ -36,9 +37,9 @@ with 'MooseX::Role::BuildInstanceOf' =>
 parameter static => ( isa => Bool, default => 0 );
 
 role {
-    
+
     my $p = shift;
-    
+
     if($p->static)
     {
         requires qw/check_has_relation check_column_relation/;
@@ -102,7 +103,7 @@ role {
     (
         is => 'ro',
         writer => '_set_prefetch',
-        isa => Prefetch, 
+        isa => Prefetch,
         default => sub { $p->static ? [] : undef },
         coerce => 1,
         trigger => sub
@@ -137,7 +138,7 @@ role {
     (
         is => 'ro',
         writer => '_set_prefetch_allows',
-        isa => ArrayRef[ArrayRef|Str|HashRef], 
+        isa => ArrayRef[ArrayRef|Str|HashRef],
         default => sub { [ ] },
         predicate => 'has_prefetch_allows',
         trigger => sub
@@ -201,7 +202,7 @@ role {
         trigger => sub
         {
             my ($self, $new) = @_;
-            
+
             if($self->has_search_exposes and @{$self->search_exposes})
             {
                 foreach my $foo (@$new)
@@ -224,7 +225,7 @@ role {
                     }
                 }
             }
-            
+
             my ($search_parameters, $search_attributes) = $self->generate_parameters_attributes($new);
             $self->_set_search_parameters($search_parameters);
             $self->_set_search_attributes($search_attributes);
@@ -287,7 +288,7 @@ role {
         default => sub { $p->static ? [] : undef },
         coerce => 1,
         trigger => sub
-        {   
+        {
             my ($self, $new) = @_;
             if($self->has_select_exposes)
             {
@@ -344,10 +345,12 @@ role {
         is => 'ro',
         isa => HashRef,
         writer => '_set_request_data',
+        predicate => 'has_request_data',
         trigger => sub
         {
             my ($self, $new) = @_;
             my $controller = $self->_controller;
+            return unless defined($new) && keys %$new;
             $self->_set_prefetch($new->{$controller->prefetch_arg}) if exists $new->{$controller->prefetch_arg};
             $self->_set_select($new->{$controller->select_arg}) if exists $new->{$controller->select_arg};
             $self->_set_as($new->{$controller->as_arg}) if exists $new->{$controller->as_arg};
@@ -365,9 +368,8 @@ role {
 
     method format_search_parameters => sub
     {
-        $DB::single = 1;
         my ($self, $params) = @_;
-        
+
         my $genparams = [];
 
         foreach my $param (@$params)
@@ -381,7 +383,6 @@ role {
 
     method generate_column_parameters => sub
     {
-        $DB::single = 1;
         my ($self, $source, $param, $join, $base) = @_;
         $base ||= 'me';
         my $search_params;
@@ -397,7 +398,7 @@ role {
                     next;
                 }
 
-                %$search_params = 
+                %$search_params =
                 %{
                     $self->generate_column_parameters
                     (
@@ -420,7 +421,6 @@ role {
 
     method generate_parameters_attributes => sub
     {
-        $DB::single = 1;
         my ($self, $args) = @_;
 
         return ( $self->format_search_parameters($args), $self->search_attributes );
@@ -431,7 +431,7 @@ role {
     {
         my ($self, $args) = @_;
         my $static = $self->_controller;
-        my $search_attributes = 
+        my $search_attributes =
         {
             group_by => $self->grouped_by || ((scalar(@{$static->grouped_by})) ? $static->grouped_by : undef),
             order_by => $self->ordered_by || ((scalar(@{$static->ordered_by})) ? $static->ordered_by : undef),
@@ -452,15 +452,15 @@ role {
             $search_attributes->{page} = $search_attributes->{offset} / $search_attributes->{rows} + 1;
             delete $search_attributes->{offset};
         }
-        
 
-        $search_attributes = 
-        {   
+
+        $search_attributes =
+        {
             map { @$_ }
             grep
             {
-                defined($_->[1]) 
-                ? 
+                defined($_->[1])
+                ?
                     (ref($_->[1]) && reftype($_->[1]) eq 'HASH' && keys %{$_->[1]})
                     || (ref($_->[1]) && reftype($_->[1]) eq 'ARRAY' && @{$_->[1]})
                     || length($_->[1])
@@ -475,7 +475,7 @@ role {
         if ($search_attributes->{page} && !$search_attributes->{rows}) {
             die 'list_page can only be used with list_count';
         }
-        
+
         if ($search_attributes->{select}) {
             # make sure all columns have an alias to avoid ambiguous issues
             # but allow non strings (eg. hashrefs for db procs like 'count')
@@ -484,7 +484,7 @@ role {
         }
 
         return $search_attributes;
-        
+
     };
 
 };
@@ -501,7 +501,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.001003
+version 2.002001
 
 =head1 DESCRIPTION
 
@@ -633,6 +633,7 @@ This builder method generates the search attributes
   Nicholas Perez <nperez@cpan.org>
   Luke Saunders <luke.saunders@gmail.com>
   Alexander Hartmaier <abraxxa@cpan.org>
+  Florian Ragwitz <rafl@debian.org>
 
 =head1 COPYRIGHT AND LICENSE
 
