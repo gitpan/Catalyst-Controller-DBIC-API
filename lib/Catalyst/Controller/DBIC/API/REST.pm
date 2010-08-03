@@ -1,6 +1,7 @@
 package Catalyst::Controller::DBIC::API::REST;
-$Catalyst::Controller::DBIC::API::REST::VERSION = '2.002001';
-$Catalyst::Controller::DBIC::API::REST::VERSION = '2.002001';
+BEGIN {
+  $Catalyst::Controller::DBIC::API::REST::VERSION = '2.002002';
+}
 
 #ABSTRACT: Provides a REST interface to DBIx::Class
 use Moose;
@@ -21,11 +22,13 @@ sub update_or_create_objects : Chained('objects_no_id') PathPart('') Does('Match
     $self->update_or_create($c);
 }
 
+
 sub delete_many_objects : Chained('objects_no_id') PathPart('') Does('MatchRequestMethod') Method('DELETE') Args(0)
 {
 	my ( $self, $c ) = @_;
     $self->delete($c);
 }
+
 
 sub list_objects : Chained('objects_no_id') PathPart('') Does('MatchRequestMethod') Method('GET') Args(0)
 {
@@ -40,11 +43,13 @@ sub update_or_create_one_object : Chained('object_with_id') PathPart('') Does('M
     $self->update_or_create($c);
 }
 
+
 sub delete_one_object : Chained('object_with_id') PathPart('') Does('MatchRequestMethod') Method('DELETE') Args(0)
 {
 	my ( $self, $c ) = @_;
     $self->delete($c);
 }
+
 
 sub list_one_object : Chained('object_with_id') PathPart('') Does('MatchRequestMethod') Method('GET') Args(0)
 {
@@ -63,7 +68,7 @@ Catalyst::Controller::DBIC::API::REST - Provides a REST interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.002001
+version 2.002002
 
 =head1 DESCRIPTION
 
@@ -91,40 +96,85 @@ As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the cha
 	...
   );
 
-=head2 no_id
+=head2 update_or_create_objects
 
 Chained: L</objects_no_id>
 PathPart: none
-CaptureArgs: 0
+Args: 0
+Method: POST/PUT
 
-Calls list level methods described in L<Catalyst::Controller::DBIC::API> as follows:
+Calls L<Catalyst::Controller::DBIC::API/update_or_create>. 
 
-DELETE: L<Catalyst::Controller::DBIC::API/delete>
-POST/PUT: L<Catalyst::Controller::DBIC::API/update_or_create>
-GET: forwards to L<Catalyst::Controller::DBIC::API/list>
+=head2 delete_many_objects
 
-=head2 with_id
+Chained: L</objects_no_id>
+PathPart: none
+Args: 0
+Method: DELETE
+
+Calls L<Catalyst::Controller::DBIC::API/delete>. 
+
+=head2 list_objects
+
+Chained: L</objects_no_id>
+PathPart: none
+Args: 0
+Method: GET
+
+Calls L<Catalyst::Controller::DBIC::API/list>. 
+
+=head2 update_or_create_one_object
 
 Chained: L</object_with_id>
 PathPart: none
-CaptureArgs: 0
+Args: 0
+Method: POST/PUT
 
-Forwards to list level methods described in L<Catalyst::Controller::DBIC::API> as follows:
+Calls L<Catalyst::Controller::DBIC::API/update_or_create>.
 
-DELETE: L<Catalyst::Controller::DBIC::API/delete>
-POST/PUT: L<Catalyst::Controller::DBIC::API/update_or_create>
-GET: forwards to L<Catalyst::Controller::DBIC::API/item>
+=head2 delete_one_object
+
+Chained: L</object_with_id>
+PathPart: none
+Args: 0
+Method: DELETE
+
+Calls L<Catalyst::Controller::DBIC::API/delete>.
+
+=head2 list_one_object
+
+Chained: L</object_with_id>
+PathPart: none
+Args: 0
+Method: GET
+
+Calls L<Catalyst::Controller::DBIC::API/item>.
 
 =head1 AUTHORS
 
-  Nicholas Perez <nperez@cpan.org>
-  Luke Saunders <luke.saunders@gmail.com>
-  Alexander Hartmaier <abraxxa@cpan.org>
-  Florian Ragwitz <rafl@debian.org>
+=over 4
+
+=item *
+
+Nicholas Perez <nperez@cpan.org>
+
+=item *
+
+Luke Saunders <luke.saunders@gmail.com>
+
+=item *
+
+Alexander Hartmaier <abraxxa@cpan.org>
+
+=item *
+
+Florian Ragwitz <rafl@debian.org>
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

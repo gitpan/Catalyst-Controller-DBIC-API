@@ -1,6 +1,7 @@
 Changes
 LICENSE
 MANIFEST
+META.json
 META.yml
 Makefile.PL
 README
@@ -61,4 +62,5 @@ t/rpc/list_prefetch.t
 t/rpc/list_search_allows.t
 t/rpc/setup_dbic_args.t
 t/rpc/update.t
+t/var/DBIxClass.db
 weaver.ini

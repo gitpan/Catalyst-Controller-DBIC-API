@@ -1,6 +1,7 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002001';
-$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002001';
+BEGIN {
+  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002002';
+}
 
 #ABSTRACT: Provides Request argument validation
 use MooseX::Role::Parameterized;
@@ -11,7 +12,6 @@ use Data::Dumper;
 use namespace::autoclean;
 
 use Catalyst::Controller::DBIC::API::JoinBuilder;
-
 
 
 with 'MooseX::Role::BuildInstanceOf' =>
@@ -385,7 +385,7 @@ role {
     {
         my ($self, $source, $param, $join, $base) = @_;
         $base ||= 'me';
-        my $search_params;
+        my $search_params = {};
 
         # build up condition
         foreach my $column (keys %$param)
@@ -398,8 +398,7 @@ role {
                     next;
                 }
 
-                %$search_params =
-                %{
+                $search_params = { %$search_params, %{
                     $self->generate_column_parameters
                     (
                         $source->related_source($column),
@@ -407,7 +406,7 @@ role {
                         Catalyst::Controller::DBIC::API::JoinBuilder->new(parent => $join, name => $column),
                         $column
                     )
-                };
+                }};
             }
             else
             {
@@ -501,7 +500,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.002001
+version 2.002002
 
 =head1 DESCRIPTION
 
@@ -628,16 +627,33 @@ generate_parameters_attributes takes the raw search arguments and formats the pa
 
 This builder method generates the search attributes
 
+=for Pod::Coverage check_rel
+
 =head1 AUTHORS
 
-  Nicholas Perez <nperez@cpan.org>
-  Luke Saunders <luke.saunders@gmail.com>
-  Alexander Hartmaier <abraxxa@cpan.org>
-  Florian Ragwitz <rafl@debian.org>
+=over 4
+
+=item *
+
+Nicholas Perez <nperez@cpan.org>
+
+=item *
+
+Luke Saunders <luke.saunders@gmail.com>
+
+=item *
+
+Alexander Hartmaier <abraxxa@cpan.org>
+
+=item *
+
+Florian Ragwitz <rafl@debian.org>
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, et al..
+This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
