@@ -1,8 +1,8 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002003';
 }
-#ABSTRACT: Provides acessors for static resources
+#ABSTRACT: Provides accessors for static resources
 
 use Moose::Role;
 use MooseX::Types::Moose(':all');
@@ -111,11 +111,11 @@ __END__
 
 =head1 NAME
 
-Catalyst::Controller::DBIC::API::StoredResultSource - Provides acessors for static resources
+Catalyst::Controller::DBIC::API::StoredResultSource - Provides accessors for static resources
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 PUBLIC_ATTRIBUTES
 

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::VERSION = '2.002003';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -18,9 +18,9 @@ use Try::Tiny;
 use Catalyst::Controller::DBIC::API::Request;
 use namespace::autoclean;
 
-with 'Catalyst::Controller::DBIC::API::StoredResultSource';
-with 'Catalyst::Controller::DBIC::API::StaticArguments';
-with 'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
+with 'Catalyst::Controller::DBIC::API::StoredResultSource',
+     'Catalyst::Controller::DBIC::API::StaticArguments',
+     'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
 
 __PACKAGE__->config();
 
@@ -95,7 +95,9 @@ sub deserialize :Chained('setup') :CaptureArgs(0) :PathPart('') :ActionClass('De
 
 sub generate_rs
 {
-    my ($self, $c) = @_;
+    #my ($self, $c) = @_;
+    my ($self) = @_;
+
     return $self->stored_result_source->resultset;
 }
 
@@ -298,7 +300,8 @@ sub list_format_output
 
 sub row_format_output
 {
-    my ($self, $c, $row) = @_;
+    #my ($self, $c, $row) = @_;
+    my ($self, undef, $row) = @_;
     return $row; # passthrough by default
 }
 
@@ -573,7 +576,8 @@ sub update_object_relation
 
 sub insert_object_from_params
 {
-    my ($self, $c, $object, $params) = @_;
+    #my ($self, $c, $object, $params) = @_;
+    my ($self, undef, $object, $params) = @_;
 
     my %rels;
     while (my ($k, $v) = each %{ $params }) {
@@ -603,7 +607,8 @@ sub delete_objects
 
 sub delete_object
 {
-    my ($self, $c, $object) = @_;
+    #my ($self, $c, $object) = @_;
+    my ($self, undef, $object) = @_;
 
     $object->delete;
 }
@@ -647,7 +652,8 @@ sub end :Private
 
 sub each_object_inflate
 {
-    my ($self, $c, $object) = @_;
+    #my ($self, $c, $object) = @_;
+    my ($self, undef, $object) = @_;
 
     return { $object->get_columns };
 }
@@ -660,7 +666,14 @@ sub serialize :ActionClass('Serialize') { }
 sub push_error
 {
     my ( $self, $c, $params ) = @_;
-    push( @{$c->stash->{_dbic_crud_errors}}, $params->{message} || 'unknown error' );
+    my $error = 'unknown error';
+    if (exists $params->{message}) {
+        $error = $params->{message};
+        # remove newline from die "error message\n" which is required to not
+        # have the filename and line number in the error text
+        $error =~ s/\n$//;
+    }
+    push( @{$c->stash->{_dbic_crud_errors}}, $error);
 }
 
 
@@ -682,7 +695,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 SYNOPSIS
 
@@ -692,24 +705,24 @@ version 2.002002
 
   __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rpc/rpc_base' } }, # define parent chain action and partpath
-      class => 'MyAppDB::Artist', # DBIC schema class
-      create_requires => ['name', 'age'], # columns required to create
-      create_allows => ['nickname'], # additional non-required columns that create allows
-      update_allows => ['name', 'age', 'nickname'], # columns that update allows
-      update_allows => ['name', 'age', 'nickname'], # columns that update allows
-      select => [qw/name age/], # columns that data returns
-      prefetch => ['cds'], # relationships that are prefetched when no prefetch param is passed
-      prefetch_allows => [ # every possible prefetch param allowed
+      class            => 'MyAppDB::Artist',
+      create_requires  => ['name', 'age'],
+      create_allows    => ['nickname'],
+      update_allows    => ['name', 'age', 'nickname'],
+      update_allows    => ['name', 'age', 'nickname'],
+      select           => [qw/name age/],
+      prefetch         => ['cds'],
+      prefetch_allows  => [
           'cds',
           qw/ cds /,
           { cds => 'tracks' },
-          { cds => [qw/ tracks /] }
+          { cds => [qw/ tracks /] },
       ],
-      ordered_by => [qw/age/], # order of generated list
-      search_exposes => [qw/age nickname/, { cds => [qw/title year/] }], # columns that can be searched on via list
-      data_root => 'data' # defaults to "list" for backwards compatibility
-      use_json_boolean => 1, # use JSON::Any::true|false in the response instead of strings
-      return_object => 1, # makes create and update actions return the object
+      ordered_by       => [qw/age/],
+      search_exposes   => [qw/age nickname/, { cds => [qw/title year/] }],
+      data_root        => 'data',
+      use_json_boolean => 1,
+      return_object    => 1,
       );
 
   # Provides the following functional endpoints:
@@ -856,7 +869,7 @@ Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L
 
 =head3 page
 
-Arguments to pass to L<DBIx::Class::ResultSet/rows> when performing search for L</list>.
+Arguments to pass to L<DBIx::Class::ResultSet/page> when performing search for L</list>.
 
 =head1 PROTECTED_METHODS
 

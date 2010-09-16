@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Validator;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::Validator::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::Validator::VERSION = '2.002003';
 }
 #ABSTRACT: Provides validation services for inbound requests against whitelisted parameters
 use Moose;
@@ -20,7 +20,7 @@ Catalyst::Controller::DBIC::API::Validator->meta->make_immutable;
 ###############################################################################
 package Catalyst::Controller::DBIC::API::Visitor;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::Visitor::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::Visitor::VERSION = '2.002003';
 }
 
 use Moose;
@@ -126,7 +126,7 @@ Catalyst::Controller::DBIC::API::Validator - Provides validation services for in
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 AUTHORS
 

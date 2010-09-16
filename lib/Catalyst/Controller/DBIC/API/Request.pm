@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.002003';
 }
 
 #ABSTRACT: Provides a role to be applied to the Request object
@@ -8,7 +8,8 @@ use Moose::Role;
 use MooseX::Types::Moose(':all');
 use namespace::autoclean;
 
-#XXX HACK
+#XXX HACK to satisfy the used roles requirements
+# see Moose test 600_todo_tests/006_required_role_accessors.t
 sub _application {}
 sub _controller {}
 
@@ -37,9 +38,9 @@ has '_controller' =>
     }
 );
 
-with 'Catalyst::Controller::DBIC::API::StoredResultSource';
-with 'Catalyst::Controller::DBIC::API::RequestArguments';
-with 'Catalyst::Controller::DBIC::API::Request::Context';
+with 'Catalyst::Controller::DBIC::API::StoredResultSource',
+     'Catalyst::Controller::DBIC::API::RequestArguments',
+     'Catalyst::Controller::DBIC::API::Request::Context';
 
 
 1;
@@ -53,7 +54,7 @@ Catalyst::Controller::DBIC::API::Request - Provides a role to be applied to the 
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 DESCRIPTION
 
@@ -61,7 +62,7 @@ Please see L<Catalyst::Controller::DBIC::API::RequestArguments> and L<Catalyst::
 
 =head1 PRIVATE_ATTRIBUTES
 
-=head2 _application is: ro, isa: Object, handles: Catalyst::Controller::DBIC::API::StoredResultSource
+=head2 _application is: ro, isa: Object|ClassName, handles: Catalyst::Controller::DBIC::API::StoredResultSource
 
 This attribute helps bridge between the request guts and the application guts; allows request argument validation against the schema. This is set during L<Catalyst::Controller::DBIC::API/inflate_request>
 

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RPC;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002003';
 }
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
@@ -17,14 +17,6 @@ __PACKAGE__->config(
     },
 );
 
-
-
-sub index : Chained('setup') PathPart('') Args(0) {
-	my ( $self, $c ) = @_;
-
-	$self->push_error($c, { message => 'Not implemented' });
-	$c->res->status( '404' );
-}
 
 
 sub create :Chained('objects_no_id') :PathPart('create') :Args(0)
@@ -72,7 +64,7 @@ sub update_bulk :Chained('objects_no_id') :PathPart('update') :Args(0)
 sub delete_bulk :Chained('objects_no_id') :PathPart('delete') :Args(0)
 {
     my ($self, $c) = @_;
-    $self->next::method($c);
+    $self->delete($c);
 }
 
 1;
@@ -86,7 +78,7 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 DESCRIPTION
 
@@ -116,14 +108,6 @@ As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the cha
     ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } },
 	...
   );
-
-=head2 index
-
-Chained: L</setup>
-PathPart: ''
-Args: 0
-
-Returns http status code 404 by default.
 
 =head2 create
 

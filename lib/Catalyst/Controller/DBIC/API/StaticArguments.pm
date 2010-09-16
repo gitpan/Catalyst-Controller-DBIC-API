@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002003';
 }
 
 #ABSTRACT: Provides controller level configuration arguments
@@ -93,7 +93,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 DESCRIPTION
 

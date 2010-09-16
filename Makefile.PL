@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     'Test::WWW::Mechanize' => '0.20',
     'Test::WWW::Mechanize::Catalyst' => '0.37'
   },
-  'VERSION' => '2.002002',
+  'VERSION' => '2.002003',
   'test' => {
     'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
   }

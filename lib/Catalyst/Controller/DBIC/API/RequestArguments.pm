@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002003';
 }
 
 #ABSTRACT: Provides Request argument validation
@@ -145,13 +145,13 @@ role {
         {
             my ($self, $new) = @_;
 
-            sub check_rel {
+            sub _check_rel {
                 my ($self, $rel, $static) = @_;
                 if(ArrayRef->check($rel))
                 {
                     foreach my $rel_sub (@$rel)
                     {
-                        $self->check_rel($rel_sub, $static);
+                        $self->_check_rel($rel_sub, $static);
                     }
                 }
                 elsif(HashRef->check($rel))
@@ -171,7 +171,7 @@ role {
 
             foreach my $rel (@$new)
             {
-                $self->check_rel($rel, $p->static);
+                $self->_check_rel($rel, $p->static);
             }
         },
     );
@@ -390,8 +390,9 @@ role {
         # build up condition
         foreach my $column (keys %$param)
         {
-            if($source->has_relationship($column))
+            if ($source->has_relationship($column))
             {
+                # check if the value isn't a hashref
                 unless (ref($param->{$column}) && reftype($param->{$column}) eq 'HASH')
                 {
                     $search_params->{join('.', $base, $column)} = $param->{$column};
@@ -408,9 +409,21 @@ role {
                     )
                 }};
             }
-            else
+            elsif ($source->has_column($column))
             {
                 $search_params->{join('.', $base, $column)} = $param->{$column};
+            }
+            # might be a sql function instead of a column name
+            # e.g. {colname => {like => '%foo%'}}
+            else
+            {
+                # but only if it's not a hashref
+                unless (ref($param->{$column}) && reftype($param->{$column}) eq 'HASH') {
+                    $search_params->{join('.', $base, $column)} = $param->{$column};
+                }
+                else {
+                    die "$column is neither a relationship nor a column\n";
+                }
             }
         }
 
@@ -438,6 +451,7 @@ role {
             as => $self->as || ((scalar(@{$static->as})) ? $static->as : undef),
             prefetch => $self->prefetch || $static->prefetch || undef,
             rows => $self->count || $static->count,
+            page => $static->page,
             offset => $self->offset,
             join => $self->build_joins,
         };
@@ -500,7 +514,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 DESCRIPTION
 
@@ -626,8 +640,6 @@ generate_parameters_attributes takes the raw search arguments and formats the pa
 =head2 _build_search_attributes
 
 This builder method generates the search attributes
-
-=for Pod::Coverage check_rel
 
 =head1 AUTHORS
 

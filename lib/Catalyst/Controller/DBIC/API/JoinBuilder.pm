@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::JoinBuilder;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::JoinBuilder::VERSION = '2.002002';
+  $Catalyst::Controller::DBIC::API::JoinBuilder::VERSION = '2.002003';
 }
 
 #ABSTRACT: Provides a helper class to automatically keep track of joins in complex searches
@@ -90,7 +90,7 @@ Catalyst::Controller::DBIC::API::JoinBuilder - Provides a helper class to automa
 
 =head1 VERSION
 
-version 2.002002
+version 2.002003
 
 =head1 DESCRIPTION
 
