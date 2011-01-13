@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002003';
+  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.002004';
 }
 
 #ABSTRACT: Provides Request argument validation
@@ -9,30 +9,24 @@ use Catalyst::Controller::DBIC::API::Types(':all');
 use MooseX::Types::Moose(':all');
 use Scalar::Util('reftype');
 use Data::Dumper;
+use Catalyst::Controller::DBIC::API::Validator;
 use namespace::autoclean;
 
 use Catalyst::Controller::DBIC::API::JoinBuilder;
 
 
-with 'MooseX::Role::BuildInstanceOf' =>
-{
-    'target' => 'Catalyst::Controller::DBIC::API::Validator',
-    'prefix' => 'search_validator',
-};
 
 
-with 'MooseX::Role::BuildInstanceOf' =>
-{
-    'target' => 'Catalyst::Controller::DBIC::API::Validator',
-    'prefix' => 'select_validator',
-};
+has [qw( search_validator select_validator prefetch_validator )] => (
+    is => 'ro',
+    isa => 'Catalyst::Controller::DBIC::API::Validator',
+    lazy => 1,
+    builder => '_build_validator',
+);
 
-
-with 'MooseX::Role::BuildInstanceOf' =>
-{
-    'target' => 'Catalyst::Controller::DBIC::API::Validator',
-    'prefix' => 'prefetch_validator',
-};
+sub _build_validator {
+    return Catalyst::Controller::DBIC::API::Validator->new;
+}
 
 parameter static => ( isa => Bool, default => 0 );
 
@@ -514,7 +508,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.002003
+version 2.002004
 
 =head1 DESCRIPTION
 
@@ -661,11 +655,15 @@ Alexander Hartmaier <abraxxa@cpan.org>
 
 Florian Ragwitz <rafl@debian.org>
 
+=item *
+
+Oleg Kostyuk <cub.uanic@gmail.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

@@ -1,4 +1,13 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.002003
+Revision history for Catalyst-Controller-DBIC-API: 2.002004
+
+2.002004  2011-01-13 19:22:20 Europe/Vienna
+
+- Renamed Visitor to Validator::Visitor to conform with Data::DPath::Validator
+  and moved it into a separate file.
+- Fixed failure because of Data::DPath >=0.41 by not using
+  MooseX::Role::BuildInstanceOf for the validator attributes (RT#64673)
+- Added result_class and stash_key attributes to Catalyst::Controller::DBIC::API,
+  allowing the values of them to be derived from the controller configuration (RT#63686)
 
 2.002003  2010-09-16 10:44:40 Europe/Vienna
 

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.002003';
+  $Catalyst::Controller::DBIC::API::VERSION = '2.002004';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -268,7 +268,7 @@ sub list_format_output
     my ($self, $c) = @_;
 
     my $rs = $c->req->current_result_set->search;
-    $rs->result_class('DBIx::Class::ResultClass::HashRefInflator');
+    $rs->result_class($self->result_class) if $self->result_class;
 
     try
     {
@@ -287,7 +287,7 @@ sub list_format_output
             $output->{$self->total_entries_arg} = $c->req->search_total_entries + 0;
         }
 
-        $c->stash->{response} = $output;
+        $c->stash->{$self->stash_key} = $output;
     }
     catch
     {
@@ -318,7 +318,7 @@ sub item
     }
     else
     {
-        $c->stash->{response}->{$self->item_root} = $self->each_object_inflate($c, $c->req->get_object(0)->[0]);
+        $c->stash->{$self->stash_key}->{$self->item_root} = $self->each_object_inflate($c, $c->req->get_object(0)->[0]);
     }
 }
 
@@ -624,25 +624,25 @@ sub end :Private
     # Check for errors caught elsewhere
     if ( $c->res->status and $c->res->status != 200 ) {
         $default_status = $c->res->status;
-        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
+        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
     } elsif ($self->get_errors($c)) {
-        $c->stash->{response}->{messages} = $self->get_errors($c);
-        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
+        $c->stash->{$self->stash_key}->{messages} = $self->get_errors($c);
+        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::Any::false : 'false';
         $default_status = 400;
     } else {
-        $c->stash->{response}->{success} = $self->use_json_boolean ? JSON::Any::true : 'true';
+        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::Any::true : 'true';
         $default_status = 200;
     }
 
     unless ($default_status == 200)
     {
-        delete $c->stash->{response}->{$self->data_root};
+        delete $c->stash->{$self->stash_key}->{$self->data_root};
     }
     elsif($self->return_object && $c->req->has_objects)
     {
         my $returned_objects = [];
         push(@$returned_objects, $self->each_object_inflate($c, $_)) for map { $_->[0] } $c->req->all_objects;
-        $c->stash->{response}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
+        $c->stash->{$self->stash_key}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
     }
 
     $c->res->status( $default_status || 200 );
@@ -695,7 +695,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.002003
+version 2.002004
 
 =head1 SYNOPSIS
 
@@ -706,6 +706,7 @@ version 2.002003
   __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rpc/rpc_base' } }, # define parent chain action and partpath
       class            => 'MyAppDB::Artist',
+      result_class     => 'MyAppDB::ResultSet::Artist',
       create_requires  => ['name', 'age'],
       create_allows    => ['nickname'],
       update_allows    => ['name', 'age', 'nickname'],
@@ -774,9 +775,17 @@ Below are explanations for various configuration parameters. Please see L<Cataly
 
 Whatever you would pass to $c->model to get a resultset for this class. MyAppDB::Track for example.
 
+=head3 resultset_class
+
+Desired resultset class after accessing your model. MyAppDB::ResultSet::Track for example. By default, it's DBIx::Class::ResultClass::HashRefInflator. Set to empty string to leave resultset class without change.
+
+=head3 stash_key
+
+Controls where in stash request_data should be stored, and defaults to 'response'.
+
 =head3 data_root
 
-By default, the response data is serialized into $c->stash->{response}->{$self->data_root} and data_root defaults to 'list' to preserve backwards compatibility. This is now configuable to meet the needs of the consuming client.
+By default, the response data is serialized into $c->stash->{$self->stash_key}->{$self->data_root} and data_root defaults to 'list' to preserve backwards compatibility. This is now configuable to meet the needs of the consuming client.
 
 =head3 use_json_boolean
 
@@ -941,7 +950,7 @@ This method provides the look up functionality for an object based on 'id'. It i
 
 list's steps are broken up into three distinct methods: L</list_munge_parameters>, L</list_perform_search>, and L</list_format_output>.
 
-The goal of this method is to call ->search() on the current_result_set, HashRefInflator the result, and return it in $c->stash->{response}->{$self->data_root}. Please see the individual methods for more details on what actual processing takes place.
+The goal of this method is to call ->search() on the current_result_set, change resultset class of the result (if needed), and return it in $c->stash->{$self->stash_key}->{$self->data_root}. Please see the individual methods for more details on what actual processing takes place.
 
 If the L</select> config param is defined then the hashes will contain only those columns, otherwise all columns in the object will be returned. L</select> of course supports the function/procedure calling semantics that L<DBIx::Class::ResultSet/select>. In order to have proper column names in the result, provide arguments in L</as> (which also follows L<DBIx::Class::ResultSet/as> semantics. Similarly L</count>, L</page>, L</grouped_by> and L</ordered_by> affect the maximum number of rows returned as well as the ordering and grouping. Note that if select, count, ordered_by or grouped_by request parameters are present then these will override the values set on the class with select becoming bound by the select_exposes attribute.
 
@@ -1086,8 +1095,8 @@ For example if you wanted create to return the JSON for the newly created object
     $self->next::method($c);
 
     if ($c->req->has_objects) {
-      # $c->stash->{response} will be serialized in the end action
-      $c->stash->{response}->{$self->data_root} = [ map { { $_->get_inflated_columns } } ($c->req->all_objects) ] ;
+      # $c->stash->{$self->stash_key} will be serialized in the end action
+      $c->stash->{$self->stash_key}->{$self->data_root} = [ map { { $_->get_inflated_columns } } ($c->req->all_objects) ] ;
     }
   }
 
@@ -1136,11 +1145,15 @@ Alexander Hartmaier <abraxxa@cpan.org>
 
 Florian Ragwitz <rafl@debian.org>
 
+=item *
+
+Oleg Kostyuk <cub.uanic@gmail.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

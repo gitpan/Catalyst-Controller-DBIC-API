@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RPC;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002003';
+  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002004';
 }
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
@@ -78,7 +78,7 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.002003
+version 2.002004
 
 =head1 DESCRIPTION
 
@@ -185,11 +185,15 @@ Alexander Hartmaier <abraxxa@cpan.org>
 
 Florian Ragwitz <rafl@debian.org>
 
+=item *
+
+Oleg Kostyuk <cub.uanic@gmail.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

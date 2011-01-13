@@ -17,6 +17,7 @@ lib/Catalyst/Controller/DBIC/API/StaticArguments.pm
 lib/Catalyst/Controller/DBIC/API/StoredResultSource.pm
 lib/Catalyst/Controller/DBIC/API/Types.pm
 lib/Catalyst/Controller/DBIC/API/Validator.pm
+lib/Catalyst/Controller/DBIC/API/Validator/Visitor.pm
 t/generic.t
 t/lib/DBICTest.pm
 t/lib/RestTest.pm

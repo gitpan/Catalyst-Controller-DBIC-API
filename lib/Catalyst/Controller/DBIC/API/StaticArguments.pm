@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002003';
+  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002004';
 }
 
 #ABSTRACT: Provides controller level configuration arguments
@@ -67,6 +67,9 @@ has 'ordered_by_arg' => ( is => 'ro', isa => Str, default => 'list_ordered_by' )
 has 'prefetch_arg' => ( is => 'ro', isa => Str, default => 'list_prefetch' );
 
 
+has 'stash_key' => ( is => 'ro', isa => Str, default => 'response');
+
+
 has 'data_root' => ( is => 'ro', isa => Str, default => 'list');
 
 
@@ -93,7 +96,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.002003
+version 2.002004
 
 =head1 DESCRIPTION
 
@@ -150,6 +153,10 @@ ordered_by_arg controls how to reference 'ordered_by' in the the request_data
 
 prefetch_arg controls how to reference 'prefetch' in the the request_data
 
+=head2 stash_key is: ro, isa: Str, default: 'response'
+
+stash_key controls where in stash request_data should be stored
+
 =head2 data_root is: ro, isa: Str, default: 'list'
 
 data_root controls how to reference where the data is in the the request_data
@@ -191,11 +198,15 @@ Alexander Hartmaier <abraxxa@cpan.org>
 
 Florian Ragwitz <rafl@debian.org>
 
+=item *
+
+Oleg Kostyuk <cub.uanic@gmail.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

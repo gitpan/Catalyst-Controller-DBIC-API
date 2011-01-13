@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002003';
+  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.002004';
 }
 #ABSTRACT: Provides accessors for static resources
 
@@ -14,6 +14,9 @@ requires '_application';
 
 
 has 'class' => ( is => 'ro', isa => Str, writer => '_set_class' );
+
+
+has 'result_class' => ( is => 'ro', isa => Str, default => 'DBIx::Class::ResultClass::HashRefInflator' );
 
 
 has 'stored_result_source' =>
@@ -115,13 +118,17 @@ Catalyst::Controller::DBIC::API::StoredResultSource - Provides accessors for sta
 
 =head1 VERSION
 
-version 2.002003
+version 2.002004
 
 =head1 PUBLIC_ATTRIBUTES
 
 =head2 class is: ro, isa: Str
 
 class is the name of the class that is the model for this controller
+
+=head2 result_class is: ro, isa: Str
+
+result_class is the name of the resultset class that is the model for this controller
 
 =head2 stored_result_source is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/ResultSource>
 
@@ -165,11 +172,15 @@ Alexander Hartmaier <abraxxa@cpan.org>
 
 Florian Ragwitz <rafl@debian.org>
 
+=item *
+
+Oleg Kostyuk <cub.uanic@gmail.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2010 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

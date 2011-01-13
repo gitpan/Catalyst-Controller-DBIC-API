@@ -10,8 +10,12 @@ use ExtUtils::MakeMaker 6.31;
 
 my %WriteMakefileArgs = (
   'ABSTRACT' => 'Provides a DBIx::Class web service automagically',
-  'AUTHOR' => 'Nicholas Perez <nperez@cpan.org>, Luke Saunders <luke.saunders@gmail.com>, Alexander Hartmaier <abraxxa@cpan.org>, Florian Ragwitz <rafl@debian.org>',
-  'BUILD_REQUIRES' => {},
+  'AUTHOR' => 'Nicholas Perez <nperez@cpan.org>, Luke Saunders <luke.saunders@gmail.com>, Alexander Hartmaier <abraxxa@cpan.org>, Florian Ragwitz <rafl@debian.org>, Oleg Kostyuk <cub.uanic@gmail.com>',
+  'BUILD_REQUIRES' => {
+    'Test::Deep' => '0.104',
+    'Test::More' => '0.88',
+    'Test::WWW::Mechanize::Catalyst' => '0.37'
+  },
   'CONFIGURE_REQUIRES' => {
     'ExtUtils::MakeMaker' => '6.31'
   },
@@ -29,13 +33,9 @@ my %WriteMakefileArgs = (
     'DBIx::Class' => '0.08103',
     'Data::DPath::Validator' => '0.093411',
     'JSON::Any' => '1.19',
-    'MooseX::Types::Structured' => '0.20',
-    'Test::Deep' => '0.104',
-    'Test::More' => '0.88',
-    'Test::WWW::Mechanize' => '0.20',
-    'Test::WWW::Mechanize::Catalyst' => '0.37'
+    'MooseX::Types::Structured' => '0.20'
   },
-  'VERSION' => '2.002003',
+  'VERSION' => '2.002004',
   'test' => {
     'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
   }
