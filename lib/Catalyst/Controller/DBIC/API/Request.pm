@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.002004';
+  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.003001';
 }
 
 #ABSTRACT: Provides a role to be applied to the Request object
@@ -54,7 +54,7 @@ Catalyst::Controller::DBIC::API::Request - Provides a role to be applied to the 
 
 =head1 VERSION
 
-version 2.002004
+version 2.003001
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.002004';
+  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.003001';
 }
 
 #ABSTRACT: Provides controller level configuration arguments
@@ -96,7 +96,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.002004
+version 2.003001
 
 =head1 DESCRIPTION
 
@@ -172,7 +172,7 @@ total_entries_arg controls how to reference 'total_entries' in the the request_d
 
 =head2 use_json_boolean is: ro, isa: Bool, default: 0
 
-use_json_boolean controls whether JSON::Any boolean types are used in the success parameter of the response or if raw strings are used
+use_json_boolean controls whether JSON boolean types are used in the success parameter of the response or if raw strings are used
 
 =head2 return_object is: ro, isa: Bool, default: 0
 

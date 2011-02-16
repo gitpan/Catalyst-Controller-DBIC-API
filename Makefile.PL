@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-
+BEGIN { require 5.008006; }
 
 use ExtUtils::MakeMaker 6.31;
 
@@ -32,10 +32,10 @@ my %WriteMakefileArgs = (
     'Catalyst::Runtime' => '5.7010',
     'DBIx::Class' => '0.08103',
     'Data::DPath::Validator' => '0.093411',
-    'JSON::Any' => '1.19',
+    'JSON' => '2.50',
     'MooseX::Types::Structured' => '0.20'
   },
-  'VERSION' => '2.002004',
+  'VERSION' => '2.003001',
   'test' => {
     'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
   }

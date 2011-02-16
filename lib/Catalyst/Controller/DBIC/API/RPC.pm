@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RPC;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.002004';
+  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.003001';
 }
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
@@ -78,7 +78,7 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.002004
+version 2.003001
 
 =head1 DESCRIPTION
 
