@@ -70,4 +70,17 @@ my $track_view_url = "$base/api/rest/track/";
     );
 }
 
+{
+    my $req =
+        GET( $artist_view_url . 'action_with_error', undef, 'Accept' => 'application/json' );
+    $mech->request($req);
+    cmp_ok( $mech->status, '==', 404, 'action returned error 404' );
+    my $response = $json->decode( $mech->content );
+    is_deeply(
+        $response,
+        { success => 'false' },
+        'correct data returned'
+    );
+}
+
 done_testing();

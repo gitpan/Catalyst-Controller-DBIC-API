@@ -102,15 +102,25 @@ my $producer_create_url   = "$base/api/rpc/producer/create";
 
 # test create returns an error as expected when passing invalid value
 {
-    my $long_string = '-' x 1024;
+    my $data = {
+        producerid => 100,
+        name       => 'Producer',
+    };
 
-    my $req = POST(
-        $producer_create_url,
-        {   producerid => $long_string,
-            name       => $long_string,
-        },
-        'Accept' => 'text/json'
+    my $req = POST($producer_create_url, $data, 'Accept' => 'text/json');
+    $mech->request( $req, $content_type );
+    cmp_ok( $mech->status, '==', 200, 'create with pk value ok' );
+    my $response = $json->decode( $mech->content );
+    is_deeply(
+        $response,
+        { success => 'true', list => $data },
+        'json for producer with pk value ok'
     );
+    # try to insert same data again, as this seems to be the only way to
+    # force an insert to fail for SQLite.
+    # It accepts too long columns as well as wrong datatypes without errors.
+    # The bind with datatype of newer DBIC versions numifies non-integer
+    # values passed as pk value too.
     $mech->request( $req, $content_type );
     cmp_ok( $mech->status, '==', 400, 'invalid param value produces error' );
 }

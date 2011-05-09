@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.003001';
+  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.003002';
 }
 
 #ABSTRACT: Provides a role to be applied to the Request object
@@ -32,11 +32,12 @@ has '_controller' =>
 
         $self->_set_class($new->class) if defined($new->class);
         $self->_set_application($new->_application);
-        $self->_set_prefetch_allows($new->prefetch_allows);
         $self->_set_search_exposes($new->search_exposes);
         $self->_set_select_exposes($new->select_exposes);
-    }
+    },
+    handles => ['prefetch_validator'],
 );
+
 
 with 'Catalyst::Controller::DBIC::API::StoredResultSource',
      'Catalyst::Controller::DBIC::API::RequestArguments',
@@ -54,7 +55,7 @@ Catalyst::Controller::DBIC::API::Request - Provides a role to be applied to the 
 
 =head1 VERSION
 
-version 2.003001
+version 2.003002
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.003001';
+  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.003002';
 }
 
 #ABSTRACT: Provides controller level configuration arguments
@@ -35,8 +35,64 @@ foreach my $var (qw/create_requires create_allows update_requires update_allows/
         }
     );
 
-    before "set_${var}_column" => sub { $_[0]->check_column_relation($_[2], 1) }; #"
-    before "insert_${var}_column" => sub { $_[0]->check_column_relation($_[2], 1) }; #"
+    before "set_${var}_column" => sub { $_[0]->check_column_relation($_[2], 1) };
+    before "insert_${var}_column" => sub { $_[0]->check_column_relation($_[2], 1) };
+}
+
+
+has 'prefetch_allows' => (
+    is => 'ro',
+    writer => '_set_prefetch_allows',
+    isa => ArrayRef[ArrayRef|Str|HashRef],
+    default => sub { [ ] },
+    predicate => 'has_prefetch_allows',
+    traits => ['Array'],
+    handles =>
+    {
+        all_prefetch_allows => 'elements',
+    },
+);
+
+has 'prefetch_validator' => (
+    is => 'ro',
+    isa => 'Catalyst::Controller::DBIC::API::Validator',
+    lazy_build => 1,
+);
+
+sub _build_prefetch_validator {
+    my $self = shift;
+
+    sub _check_rel {
+        my ($self, $rel, $static, $validator) = @_;
+        if(ArrayRef->check($rel))
+        {
+            foreach my $rel_sub (@$rel)
+            {
+                _check_rel($self, $rel_sub, $static, $validator);
+            }
+        }
+        elsif(HashRef->check($rel))
+        {
+            while(my($k,$v) = each %$rel)
+            {
+                $self->check_has_relation($k, $v, undef, $static);
+            }
+            $validator->load($rel);
+        }
+        else
+        {
+            $self->check_has_relation($rel, undef, undef, $static);
+            $validator->load($rel);
+        }
+    }
+
+    my $validator = Catalyst::Controller::DBIC::API::Validator->new;
+
+    foreach my $rel ($self->all_prefetch_allows) {
+        _check_rel($self, $rel, 1, $validator);
+    }
+
+    return $validator;
 }
 
 
@@ -96,7 +152,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.003001
+version 2.003002
 
 =head1 DESCRIPTION
 
@@ -116,6 +172,15 @@ Each provides a number of handles:
     "insert_${var}_column" => 'insert'
     "count_${var}_column" => 'count'
     "all_${var}_columns" => 'elements'
+
+=head2 prefetch_allows is: ro, isa: ArrayRef[ArrayRef|Str|HashRef]
+
+prefetch_allows limits what relations may be prefetched when executing searches with joins. This is necessary to avoid denial of service attacks in form of queries which would return a large number of data and unwanted disclosure of data.
+
+Like the synopsis in DBIC::API shows, you can declare a "template" of what is allowed (by using an '*'). Each element passed in, will be converted into a Data::DPath and added to the validator.
+
+    prefetch_allows => [ 'cds', { cds => tracks }, { cds => producers } ] # to be explicit
+    prefetch_allows => [ 'cds', { cds => '*' } ] # wildcard means the same thing
 
 =head2 count_arg is: ro, isa: Str, default: 'list_count'
 

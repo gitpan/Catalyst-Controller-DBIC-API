@@ -4,7 +4,7 @@ use warnings;
 
 BEGIN { require 5.008006; }
 
-use ExtUtils::MakeMaker 6.31;
+use ExtUtils::MakeMaker 6.30;
 
 
 
@@ -17,7 +17,7 @@ my %WriteMakefileArgs = (
     'Test::WWW::Mechanize::Catalyst' => '0.37'
   },
   'CONFIGURE_REQUIRES' => {
-    'ExtUtils::MakeMaker' => '6.31'
+    'ExtUtils::MakeMaker' => '6.30'
   },
   'DISTNAME' => 'Catalyst-Controller-DBIC-API',
   'EXE_FILES' => [],
@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     'JSON' => '2.50',
     'MooseX::Types::Structured' => '0.20'
   },
-  'VERSION' => '2.003001',
+  'VERSION' => '2.003002',
   'test' => {
     'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
   }

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.003001';
+  $Catalyst::Controller::DBIC::API::VERSION = '2.003002';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -30,8 +30,9 @@ sub _build__json {
 }
 
 with 'Catalyst::Controller::DBIC::API::StoredResultSource',
-     'Catalyst::Controller::DBIC::API::StaticArguments',
-     'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
+     'Catalyst::Controller::DBIC::API::StaticArguments';
+
+with 'Catalyst::Controller::DBIC::API::RequestArguments' => { static => 1 };
 
 __PACKAGE__->config();
 
@@ -633,34 +634,32 @@ sub end :Private
 {
     my ($self, $c) = @_;
 
-    # check for errors
-    my $default_status;
-
-    # Check for errors caught elsewhere
-    if ( $c->res->status and $c->res->status != 200 ) {
-        $default_status = $c->res->status;
-        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::false : 'false';
-    } elsif ($self->get_errors($c)) {
-        $c->stash->{$self->stash_key}->{messages} = $self->get_errors($c);
-        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::false : 'false';
-        $default_status = 400;
-    } else {
-        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::true : 'true';
-        $default_status = 200;
+    # don't change the http status code if already set elsewhere
+    unless ($c->res->status && $c->res->status != 200) {
+        if ($self->has_errors($c)) {
+            $c->res->status(400);
+        }
+        else {
+            $c->res->status(200);
+        }
     }
 
-    unless ($default_status == 200)
-    {
+    if ($c->res->status == 200) {
+        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::true : 'true';
+        if($self->return_object && $c->req->has_objects) {
+            my $returned_objects = [];
+            push(@$returned_objects, $self->each_object_inflate($c, $_)) for map { $_->[0] } $c->req->all_objects;
+            $c->stash->{$self->stash_key}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
+        }
+    }
+    else {
+        $c->stash->{$self->stash_key}->{success} = $self->use_json_boolean ? JSON::false : 'false';
+        $c->stash->{$self->stash_key}->{messages} = $self->get_errors($c)
+            if $self->has_errors($c);
+        # don't return data for error responses
         delete $c->stash->{$self->stash_key}->{$self->data_root};
     }
-    elsif($self->return_object && $c->req->has_objects)
-    {
-        my $returned_objects = [];
-        push(@$returned_objects, $self->each_object_inflate($c, $_)) for map { $_->[0] } $c->req->all_objects;
-        $c->stash->{$self->stash_key}->{$self->data_root} = scalar(@$returned_objects) > 1 ? $returned_objects : $returned_objects->[0];
-    }
 
-    $c->res->status( $default_status || 200 );
     $c->forward('serialize');
 }
 
@@ -681,6 +680,8 @@ sub serialize :ActionClass('Serialize') { }
 sub push_error
 {
     my ( $self, $c, $params ) = @_;
+    die 'Catalyst app object missing'
+        unless defined $c;
     my $error = 'unknown error';
     if (exists $params->{message}) {
         $error = $params->{message};
@@ -695,7 +696,17 @@ sub push_error
 sub get_errors
 {
     my ( $self, $c ) = @_;
+    die 'Catalyst app object missing'
+        unless defined $c;
     return $c->stash->{_dbic_crud_errors};
+}
+
+
+sub has_errors {
+    my ( $self, $c ) = @_;
+    die 'Catalyst app object missing'
+        unless defined $c;
+    return exists $c->stash->{_dbic_crud_errors};
 }
 
 
@@ -710,7 +721,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.003001
+version 2.003002
 
 =head1 SYNOPSIS
 
@@ -721,7 +732,7 @@ version 2.003001
   __PACKAGE__->config
     ( action => { setup => { PathPart => 'artist', Chained => '/api/rpc/rpc_base' } }, # define parent chain action and partpath
       class            => 'MyAppDB::Artist',
-      result_class     => 'MyAppDB::ResultSet::Artist',
+      resultset_class  => 'MyAppDB::ResultSet::Artist',
       create_requires  => ['name', 'age'],
       create_allows    => ['nickname'],
       update_allows    => ['name', 'age', 'nickname'],
@@ -1083,6 +1094,10 @@ push_error stores an error message into the stash to be later retrieved by L</en
 =head2 get_errors
 
 get_errors returns all of the errors stored in the stash
+
+=head2 has_errors
+
+returns returns true if errors are stored in the stash
 
 =head1 PRIVATE_METHODS
 

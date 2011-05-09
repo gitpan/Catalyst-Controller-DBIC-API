@@ -12,4 +12,10 @@ __PACKAGE__->config
       prefetch_allows => [[qw/ cds /],{ 'cds' => 'tracks'}],
       );
 
+sub action_with_error : Chained('objects_no_id') PathPart('action_with_error') Args(0) {
+    my ( $self, $c ) = @_;
+
+    $c->res->status(404);
+}
+
 1;

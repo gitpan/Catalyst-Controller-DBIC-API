@@ -236,7 +236,7 @@ my $cd_list_url       = "$base/api/rpc/cd/list";
     is( $response->{success}, 'false', 'correct data returned' );
     like(
         $response->{messages}->[0],
-        qr/Attribute \(page\) does not pass the type constraint because: Validation failed for 'Int' (failed )?with value fgdg/,
+        qr/Attribute \(page\) does not pass the type constraint because: Validation failed for 'Int' (failed )?with value (")?fgdg(")?/,
         'correct data returned'
     );
 }
@@ -257,7 +257,7 @@ my $cd_list_url       = "$base/api/rpc/cd/list";
     is( $response->{success}, 'false', 'correct data returned' );
     like(
         $response->{messages}->[0],
-        qr/Attribute \(count\) does not pass the type constraint because: Validation failed for 'Int' (failed )?with value sdsdf/,
+        qr/Attribute \(count\) does not pass the type constraint because: Validation failed for 'Int' (failed )?with value (")?sdsdf(")?/,
         'correct data returned'
     );
 

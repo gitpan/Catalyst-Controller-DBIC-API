@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
 BEGIN {
-  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.003001';
+  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.003002';
 }
 
 #ABSTRACT: Provides Request argument validation
@@ -17,7 +17,7 @@ use Catalyst::Controller::DBIC::API::JoinBuilder;
 
 
 
-has [qw( search_validator select_validator prefetch_validator )] => (
+has [qw( search_validator select_validator )] => (
     is => 'ro',
     isa => 'Catalyst::Controller::DBIC::API::Validator',
     lazy => 1,
@@ -36,7 +36,7 @@ role {
 
     if($p->static)
     {
-        requires qw/check_has_relation check_column_relation/;
+        requires qw/check_has_relation check_column_relation prefetch_allows /;
     }
     else
     {
@@ -103,69 +103,19 @@ role {
         trigger => sub
         {
             my ($self, $new) = @_;
-            if($self->has_prefetch_allows and @{$self->prefetch_allows})
+
+            foreach my $pf (@$new)
             {
-                foreach my $pf (@$new)
+                if(HashRef->check($pf))
                 {
-                    if(HashRef->check($pf))
-                    {
-                        die qq|'${\Dumper($pf)}' is not an allowed prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
-                            unless $self->prefetch_validator->validate($pf)->[0];
-                    }
-                    else
-                    {
-                        die qq|'$pf' is not an allowed prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
-                            unless $self->prefetch_validator->validate({$pf => 1})->[0];
-                    }
-                }
-            }
-            else
-            {
-                return if not defined($new);
-                die 'Prefetching is not allowed' if @$new;
-            }
-        },
-    );
-
-
-    has prefetch_allows =>
-    (
-        is => 'ro',
-        writer => '_set_prefetch_allows',
-        isa => ArrayRef[ArrayRef|Str|HashRef],
-        default => sub { [ ] },
-        predicate => 'has_prefetch_allows',
-        trigger => sub
-        {
-            my ($self, $new) = @_;
-
-            sub _check_rel {
-                my ($self, $rel, $static) = @_;
-                if(ArrayRef->check($rel))
-                {
-                    foreach my $rel_sub (@$rel)
-                    {
-                        $self->_check_rel($rel_sub, $static);
-                    }
-                }
-                elsif(HashRef->check($rel))
-                {
-                    while(my($k,$v) = each %$rel)
-                    {
-                        $self->check_has_relation($k, $v, undef, $static);
-                    }
-                    $self->prefetch_validator->load($rel);
+                    die qq|'${\Dumper($pf)}' is not an allowed prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
+                        unless $self->prefetch_validator->validate($pf)->[0];
                 }
                 else
                 {
-                    $self->check_has_relation($rel, undef, undef, $static);
-                    $self->prefetch_validator->load($rel);
+                    die qq|'$pf' is not an allowed prefetch in: ${\join("\n", @{$self->prefetch_validator->templates})}|
+                        unless $self->prefetch_validator->validate({$pf => 1})->[0];
                 }
-            }
-
-            foreach my $rel (@$new)
-            {
-                $self->_check_rel($rel, $p->static);
             }
         },
     );
@@ -508,7 +458,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.003001
+version 2.003002
 
 =head1 DESCRIPTION
 
@@ -539,15 +489,6 @@ grouped_by is passed to ->search to determine aggregate results
 =head2 prefetch is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/Prefetch>
 
 prefetch is passed to ->search to optimize the number of database fetches for joins
-
-=head2 prefetch_allows is: ro, isa: ArrayRef[ArrayRef|Str|HashRef]
-
-prefetch_allows limits what relations may be prefetched when executing searches with joins. This is necessary to avoid denial of service attacks in form of queries which would return a large number of data and unwanted disclosure of data.
-
-Like the synopsis in DBIC::API shows, you can declare a "template" of what is allowed (by using an '*'). Each element passed in, will be converted into a Data::DPath and added to the validator.
-
-    prefetch_allows => [ 'cds', { cds => tracks }, { cds => producers } ] # to be explicit
-    prefetch_allows => [ 'cds', { cds => '*' } ] # wildcard means the same thing
 
 =head2 search_exposes is: ro, isa: ArrayRef[Str|HashRef]
 
