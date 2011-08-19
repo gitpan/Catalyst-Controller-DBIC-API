@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-BEGIN { require 5.008006; }
+use 5.008006;
 
 use ExtUtils::MakeMaker 6.30;
 
@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     'JSON' => '2.50',
     'MooseX::Types::Structured' => '0.20'
   },
-  'VERSION' => '2.003002',
+  'VERSION' => '2.004001',
   'test' => {
     'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
   }

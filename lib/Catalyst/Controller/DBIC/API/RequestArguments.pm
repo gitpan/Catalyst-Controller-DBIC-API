@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-BEGIN {
-  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.003002';
+{
+  $Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.004001';
 }
 
 #ABSTRACT: Provides Request argument validation
@@ -458,7 +458,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.003002
+version 2.004001
 
 =head1 DESCRIPTION
 

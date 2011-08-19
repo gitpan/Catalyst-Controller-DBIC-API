@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
-BEGIN {
-  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.003002';
+{
+  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.004001';
 }
 #ABSTRACT: Provides accessors for static resources
 
@@ -19,29 +19,15 @@ has 'class' => ( is => 'ro', isa => Str, writer => '_set_class' );
 has 'result_class' => ( is => 'ro', isa => Str, default => 'DBIx::Class::ResultClass::HashRefInflator' );
 
 
-has 'stored_result_source' =>
-(
-    is => 'ro',
-    isa => ResultSource,
-    lazy_build => 1,
-);
-
-
-has 'stored_model' =>
-(
-    is => 'ro',
-    isa => Model,
-    lazy_build => 1,
-);
-
-sub _build_stored_model
+sub stored_result_source
 {
-    return $_[0]->_application->model($_[0]->class);
+    return shift->stored_model->result_source;
 }
 
-sub _build_stored_result_source
+
+sub stored_model
 {
-    return shift->stored_model->result_source();
+    return $_[0]->_application->model($_[0]->class);
 }
 
 
@@ -118,7 +104,7 @@ Catalyst::Controller::DBIC::API::StoredResultSource - Provides accessors for sta
 
 =head1 VERSION
 
-version 2.003002
+version 2.004001
 
 =head1 PUBLIC_ATTRIBUTES
 
@@ -130,15 +116,15 @@ class is the name of the class that is the model for this controller
 
 result_class is the name of the resultset class that is the model for this controller
 
-=head2 stored_result_source is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/ResultSource>
+=head1 PUBLIC_METHODS
+
+=head2 stored_result_source
 
 This is the result source for the controller
 
-=head2 stored_model is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/Model>
+=head2 stored_model
 
 This is the model for the controller
-
-=head1 PUBLIC_METHODS
 
 =head2 check_has_column
 

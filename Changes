@@ -1,4 +1,8 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.003002
+Revision history for Catalyst-Controller-DBIC-API: 2.004001
+
+2.004001  2011-08-19 16:17:53 Europe/Vienna
+- Changed stored_model and stored_result_source attributes to methods for
+  ACCEPT_CONTEXT/Catalyst::Component::InstancePerContext compatibility
 
 2.003002  2011-05-09 12:30:01 Europe/Vienna
 

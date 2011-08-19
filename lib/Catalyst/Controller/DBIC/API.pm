@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
-BEGIN {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.003002';
+{
+  $Catalyst::Controller::DBIC::API::VERSION = '2.004001';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -111,10 +111,9 @@ sub deserialize :Chained('setup') :CaptureArgs(0) :PathPart('') :ActionClass('De
 
 sub generate_rs
 {
-    #my ($self, $c) = @_;
-    my ($self) = @_;
+    my ($self, $c) = @_;
 
-    return $self->stored_result_source->resultset;
+    return $c->model($self->class);
 }
 
 
@@ -721,7 +720,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.003002
+version 2.004001
 
 =head1 SYNOPSIS
 
@@ -950,7 +949,11 @@ It should be noted that arguments can used mixed modes in with some caveats. Eac
 
 =head2 generate_rs
 
-generate_rs is used by inflate_request to generate the resultset stored in the current request. It receives $c as its only argument. And by default it merely returns the resultset from the stored_result_source on the controller. Override this method if you need to manipulate the default implementation of getting the resultset from the controller.
+generate_rs is used by inflate_request to get a resultset for the current
+request. It receives $c as its only argument.
+By default it returns a resultset of the controller's class.
+Override this method if you need to manipulate the default implementation of
+getting a resultset.
 
 =head2 inflate_request
 
