@@ -9,35 +9,35 @@ use ExtUtils::MakeMaker 6.30;
 
 
 my %WriteMakefileArgs = (
-  'ABSTRACT' => 'Provides a DBIx::Class web service automagically',
-  'AUTHOR' => 'Nicholas Perez <nperez@cpan.org>, Luke Saunders <luke.saunders@gmail.com>, Alexander Hartmaier <abraxxa@cpan.org>, Florian Ragwitz <rafl@debian.org>, Oleg Kostyuk <cub.uanic@gmail.com>',
-  'BUILD_REQUIRES' => {
-    'Test::Deep' => '0.104',
-    'Test::More' => '0.88',
-    'Test::WWW::Mechanize::Catalyst' => '0.37'
+  "ABSTRACT" => "Provides a DBIx::Class web service automagically",
+  "AUTHOR" => "Nicholas Perez <nperez\@cpan.org>, Luke Saunders <luke.saunders\@gmail.com>, Alexander Hartmaier <abraxxa\@cpan.org>, Florian Ragwitz <rafl\@debian.org>, Oleg Kostyuk <cub.uanic\@gmail.com>",
+  "BUILD_REQUIRES" => {
+    "Test::Deep" => "0.104",
+    "Test::More" => "0.88",
+    "Test::WWW::Mechanize::Catalyst" => "0.37"
   },
-  'CONFIGURE_REQUIRES' => {
-    'ExtUtils::MakeMaker' => '6.30'
+  "CONFIGURE_REQUIRES" => {
+    "ExtUtils::MakeMaker" => "6.30"
   },
-  'DISTNAME' => 'Catalyst-Controller-DBIC-API',
-  'EXE_FILES' => [],
-  'LICENSE' => 'perl',
-  'NAME' => 'Catalyst::Controller::DBIC::API',
-  'PREREQ_PM' => {
-    'CGI::Expand' => '2.02',
-    'Catalyst::Action::Serialize' => '0.83',
-    'Catalyst::ActionRole::MatchRequestMethod' => '0',
-    'Catalyst::Controller::ActionRole' => '0',
-    'Catalyst::Model::DBIC::Schema' => '0.20',
-    'Catalyst::Runtime' => '5.7010',
-    'DBIx::Class' => '0.08103',
-    'Data::DPath::Validator' => '0.093411',
-    'JSON' => '2.50',
-    'MooseX::Types::Structured' => '0.20'
+  "DISTNAME" => "Catalyst-Controller-DBIC-API",
+  "EXE_FILES" => [],
+  "LICENSE" => "perl",
+  "NAME" => "Catalyst::Controller::DBIC::API",
+  "PREREQ_PM" => {
+    "CGI::Expand" => "2.02",
+    "Catalyst::Action::Serialize" => "0.83",
+    "Catalyst::ActionRole::MatchRequestMethod" => 0,
+    "Catalyst::Controller::ActionRole" => 0,
+    "Catalyst::Model::DBIC::Schema" => "0.20",
+    "Catalyst::Runtime" => "5.7010",
+    "DBIx::Class" => "0.08103",
+    "Data::DPath::Validator" => "0.093411",
+    "JSON" => "2.50",
+    "MooseX::Types::Structured" => "0.20"
   },
-  'VERSION' => '2.004001',
-  'test' => {
-    'TESTS' => 't/*.t t/rest/*.t t/rpc/*.t'
+  "VERSION" => "2.004002",
+  "test" => {
+    "TESTS" => "t/*.t t/rest/*.t t/rpc/*.t"
   }
 );
 

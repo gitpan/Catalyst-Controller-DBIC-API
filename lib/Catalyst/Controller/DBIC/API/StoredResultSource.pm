@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StoredResultSource;
 {
-  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.004001';
+  $Catalyst::Controller::DBIC::API::StoredResultSource::VERSION = '2.004002';
 }
 #ABSTRACT: Provides accessors for static resources
 
@@ -16,7 +16,7 @@ requires '_application';
 has 'class' => ( is => 'ro', isa => Str, writer => '_set_class' );
 
 
-has 'result_class' => ( is => 'ro', isa => Str, default => 'DBIx::Class::ResultClass::HashRefInflator' );
+has 'result_class' => ( is => 'ro', isa => Maybe[Str], default => 'DBIx::Class::ResultClass::HashRefInflator' );
 
 
 sub stored_result_source
@@ -104,7 +104,7 @@ Catalyst::Controller::DBIC::API::StoredResultSource - Provides accessors for sta
 
 =head1 VERSION
 
-version 2.004001
+version 2.004002
 
 =head1 PUBLIC_ATTRIBUTES
 

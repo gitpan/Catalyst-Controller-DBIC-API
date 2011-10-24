@@ -1,6 +1,12 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.004001
+Revision history for Catalyst-Controller-DBIC-API: 2.004002
+
+2.004002  2011-10-24 15:48:55 Europe/Vienna
+
+- Use the column accessor instead of set_column when inserting new objects
+- Allow setting the result_class to undef to prevent the usage of HashRefInflator
 
 2.004001  2011-08-19 16:17:53 Europe/Vienna
+
 - Changed stored_model and stored_result_source attributes to methods for
   ACCEPT_CONTEXT/Catalyst::Component::InstancePerContext compatibility
 

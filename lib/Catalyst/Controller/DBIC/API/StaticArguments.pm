@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
 {
-  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.004001';
+  $Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.004002';
 }
 
 #ABSTRACT: Provides controller level configuration arguments
@@ -152,7 +152,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.004001
+version 2.004002
 
 =head1 DESCRIPTION
 
@@ -190,7 +190,7 @@ count_arg controls how to reference 'count' in the the request_data
 
 page_arg controls how to reference 'page' in the the request_data
 
-=head2 offset_arg is: ro, isa: Str, default: 'offset'
+=head2 offset_arg is: ro, isa: Str, default: 'list_offset'
 
 offset_arg controls how to reference 'offset' in the the request_data
 

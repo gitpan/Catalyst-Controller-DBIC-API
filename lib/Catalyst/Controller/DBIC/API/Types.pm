@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Types;
 {
-  $Catalyst::Controller::DBIC::API::Types::VERSION = '2.004001';
+  $Catalyst::Controller::DBIC::API::Types::VERSION = '2.004002';
 }
 
 #ABSTRACT: Provides shortcut types and coercions for DBIC::API
@@ -56,7 +56,7 @@ Catalyst::Controller::DBIC::API::Types - Provides shortcut types and coercions f
 
 =head1 VERSION
 
-version 2.004001
+version 2.004002
 
 =head1 TYPES
 
