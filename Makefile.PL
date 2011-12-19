@@ -35,7 +35,7 @@ my %WriteMakefileArgs = (
     "JSON" => "2.50",
     "MooseX::Types::Structured" => "0.20"
   },
-  "VERSION" => "2.004002",
+  "VERSION" => "2.004003",
   "test" => {
     "TESTS" => "t/*.t t/rest/*.t t/rpc/*.t"
   }

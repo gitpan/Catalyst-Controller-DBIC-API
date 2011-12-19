@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
 {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.004002';
+  $Catalyst::Controller::DBIC::API::VERSION = '2.004003';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -726,7 +726,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.004002
+version 2.004003
 
 =head1 SYNOPSIS
 

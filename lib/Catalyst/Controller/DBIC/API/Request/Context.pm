@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request::Context;
 {
-  $Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.004002';
+  $Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.004003';
 }
 
 #ABSTRACT: Provides additional context to the Request
@@ -47,7 +47,7 @@ Catalyst::Controller::DBIC::API::Request::Context - Provides additional context 
 
 =head1 VERSION
 
-version 2.004002
+version 2.004003
 
 =head1 PUBLIC_ATTRIBUTES
 

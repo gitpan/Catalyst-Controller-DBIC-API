@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::REST;
 {
-  $Catalyst::Controller::DBIC::API::REST::VERSION = '2.004002';
+  $Catalyst::Controller::DBIC::API::REST::VERSION = '2.004003';
 }
 
 #ABSTRACT: Provides a REST interface to DBIx::Class
@@ -68,7 +68,7 @@ Catalyst::Controller::DBIC::API::REST - Provides a REST interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.004002
+version 2.004003
 
 =head1 DESCRIPTION
 
