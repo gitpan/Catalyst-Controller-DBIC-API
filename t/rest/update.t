@@ -27,6 +27,7 @@ my $tracks_update_url = $track_url;
 
 # test invalid track id caught
 {
+    diag 'DBIx::Class warns about a non-numeric id which is ok because we test for that too';
     foreach my $wrong_id ( 'sdsdsdsd', 3434234 ) {
         my $incorrect_url = "$base/api/rest/track/" . $wrong_id;
         my $test_data     = $json->encode( { title => 'value' } );

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API;
 {
-  $Catalyst::Controller::DBIC::API::VERSION = '2.004003';
+  $Catalyst::Controller::DBIC::API::VERSION = '2.004004';
 }
 
 #ABSTRACT: Provides a DBIx::Class web service automagically
@@ -42,8 +42,7 @@ sub begin :Private
 {
     my ($self, $c) = @_;
 
-    Catalyst::Controller::DBIC::API::Request->meta->apply($c->req)
-        unless Moose::Util::does_role($c->req, 'Catalyst::Controller::DBIC::API::Request');
+    Moose::Util::ensure_all_roles($c->req, 'Catalyst::Controller::DBIC::API::Request');
 }
 
 
@@ -718,6 +717,7 @@ sub has_errors {
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -726,7 +726,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.004003
+version 2.004004
 
 =head1 SYNOPSIS
 
@@ -1192,10 +1192,9 @@ Oleg Kostyuk <cub.uanic@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

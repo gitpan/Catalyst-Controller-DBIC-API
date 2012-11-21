@@ -23,7 +23,7 @@ my $artist_view_url = "$base/api/rest/artist/";
 {
     my $id = 1;
     my $req =
-        GET( $artist_view_url . $id, undef, 'Accept' => 'application/json' );
+        GET( $artist_view_url . $id, 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
     my %expected_response =
@@ -39,7 +39,7 @@ my $artist_view_url = "$base/api/rest/artist/";
 {
     my $id = 5;
     my $req =
-        GET( $artist_view_url . $id, undef, 'Accept' => 'application/json' );
+        GET( $artist_view_url . $id, 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 400, 'open attempt not ok' );
     my $response = $json->decode( $mech->content );
@@ -57,7 +57,7 @@ my $track_view_url = "$base/api/rest/track/";
 {
     my $id = 9;
     my $req =
-        GET( $track_view_url . $id, undef, 'Accept' => 'application/json' );
+        GET( $track_view_url . $id, 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 200, 'got track with datetime object okay' );
     my %expected_response =
@@ -72,7 +72,7 @@ my $track_view_url = "$base/api/rest/track/";
 
 {
     my $req =
-        GET( $artist_view_url . 'action_with_error', undef, 'Accept' => 'application/json' );
+        GET( $artist_view_url . 'action_with_error', 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 404, 'action returned error 404' );
     my $response = $json->decode( $mech->content );

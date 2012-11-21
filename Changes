@@ -1,4 +1,10 @@
-Revision history for Catalyst-Controller-DBIC-API: 2.004003
+Revision history for Catalyst-Controller-DBIC-API: 2.004004
+
+2.004004  2012-11-21 12:20:41 Europe/Vienna
+- Fixed test failures in t/[rest,rpc]/item.t on newer HTTP::Message versions
+- Don't wrap the SQLite test schema DDL queries in a transaction to suppress
+  DBIx::Class warnings
+- Added diagnostic messages to tests that trigger DBIx::Class warnings
 
 2.004003  2011-12-19 14:41:59 Europe/Vienna
 - Fixed test failure in generic.t with Moose > 2.02

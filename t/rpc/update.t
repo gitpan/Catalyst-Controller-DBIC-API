@@ -28,6 +28,7 @@ my $tracks_update_url = "$base/api/rpc/track/update";
 
 # test invalid track id caught
 {
+    diag 'DBIx::Class warns about a non-numeric id which is ok because we test for that too';
     foreach my $wrong_id ( 'sdsdsdsd', 3434234 ) {
         my $incorrect_url = "$base/api/rpc/track/id/" . $wrong_id . "/update";
         my $req = POST( $incorrect_url, { title => 'value' } );

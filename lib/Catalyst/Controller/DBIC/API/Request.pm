@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Request;
 {
-  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.004003';
+  $Catalyst::Controller::DBIC::API::Request::VERSION = '2.004004';
 }
 
 #ABSTRACT: Provides a role to be applied to the Request object
@@ -47,6 +47,7 @@ with 'Catalyst::Controller::DBIC::API::StoredResultSource',
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -55,7 +56,7 @@ Catalyst::Controller::DBIC::API::Request - Provides a role to be applied to the 
 
 =head1 VERSION
 
-version 2.004003
+version 2.004004
 
 =head1 DESCRIPTION
 
@@ -95,10 +96,9 @@ Oleg Kostyuk <cub.uanic@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

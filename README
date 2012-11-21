@@ -1,11 +1,11 @@
 
 
 This archive contains the distribution Catalyst-Controller-DBIC-API,
-version 2.004003:
+version 2.004004:
 
   Provides a DBIx::Class web service automagically
 
-This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

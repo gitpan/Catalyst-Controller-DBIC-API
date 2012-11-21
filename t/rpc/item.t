@@ -22,8 +22,7 @@ my $artist_view_url = "$base/api/rpc/artist/id/";
 
 {
     my $id = 1;
-    my $req =
-        GET( $artist_view_url . $id, undef, 'Accept' => 'application/json' );
+    my $req = GET( $artist_view_url . $id, 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 200, 'open attempt okay' );
     my %expected_response =
@@ -38,8 +37,7 @@ my $artist_view_url = "$base/api/rpc/artist/id/";
 
 {
     my $id = 5;
-    my $req =
-        GET( $artist_view_url . $id, undef, 'Accept' => 'application/json' );
+    my $req = GET( $artist_view_url . $id, 'Accept' => 'application/json' );
     $mech->request($req);
     cmp_ok( $mech->status, '==', 400, 'open attempt not ok' );
     my $response = $json->decode( $mech->content );

@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::Validator;
 {
-  $Catalyst::Controller::DBIC::API::Validator::VERSION = '2.004003';
+  $Catalyst::Controller::DBIC::API::Validator::VERSION = '2.004004';
 }
 #ABSTRACT: Provides validation services for inbound requests against whitelisted parameters
 use Moose;
@@ -19,7 +19,9 @@ sub _build_custom_visitor
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 __END__
+
 =pod
 
 =head1 NAME
@@ -28,7 +30,7 @@ Catalyst::Controller::DBIC::API::Validator - Provides validation services for in
 
 =head1 VERSION
 
-version 2.004003
+version 2.004004
 
 =head1 AUTHORS
 
@@ -58,10 +60,9 @@ Oleg Kostyuk <cub.uanic@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

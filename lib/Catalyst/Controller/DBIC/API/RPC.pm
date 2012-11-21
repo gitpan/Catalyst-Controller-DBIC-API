@@ -1,6 +1,6 @@
 package Catalyst::Controller::DBIC::API::RPC;
 {
-  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.004003';
+  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.004004';
 }
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
@@ -70,6 +70,7 @@ sub delete_bulk :Chained('objects_no_id') :PathPart('delete') :Args(0)
 1;
 
 __END__
+
 =pod
 
 =head1 NAME
@@ -78,7 +79,7 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.004003
+version 2.004004
 
 =head1 DESCRIPTION
 
@@ -193,10 +194,9 @@ Oleg Kostyuk <cub.uanic@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2011 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
 
 =cut
-

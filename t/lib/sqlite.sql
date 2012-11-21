@@ -1,8 +1,8 @@
+BEGIN TRANSACTION;
 -- 
 -- Created by SQL::Translator::Producer::SQLite
 -- Created on Tue Aug  8 01:53:20 2006
 -- 
-BEGIN TRANSACTION;
 
 --
 -- Table: cd_to_producer
@@ -59,5 +59,4 @@ CREATE TABLE producer (
   producerid INTEGER PRIMARY KEY NOT NULL,
   name varchar(100) NOT NULL
 );
-
 COMMIT;
