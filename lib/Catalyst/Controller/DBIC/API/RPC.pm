@@ -1,7 +1,5 @@
 package Catalyst::Controller::DBIC::API::RPC;
-{
-  $Catalyst::Controller::DBIC::API::RPC::VERSION = '2.004004';
-}
+$Catalyst::Controller::DBIC::API::RPC::VERSION = '2.005001';
 #ABSTRACT: Provides an RPC interface to DBIx::Class
 
 use Moose;
@@ -19,51 +17,44 @@ __PACKAGE__->config(
 
 
 
-sub create :Chained('objects_no_id') :PathPart('create') :Args(0)
-{
-	my ($self, $c) = @_;
+sub create : Chained('objects_no_id') : PathPart('create') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->update_or_create($c);
 }
 
 
-sub list :Chained('deserialize') :PathPart('list') :Args(0)
-{
-	my ($self, $c) = @_;
+sub list : Chained('deserialize') : PathPart('list') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->next::method($c);
 }
 
 
-sub item :Chained('object_with_id') :PathPart('') :Args(0)
-{
-    my ($self, $c) = @_;
+sub item : Chained('object_with_id') : PathPart('') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->next::method($c);
 }
 
 
-sub update :Chained('object_with_id') :PathPart('update') :Args(0)
-{
-    my ($self, $c) = @_;
+sub update : Chained('object_with_id') : PathPart('update') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->update_or_create($c);
 }
 
 
-sub delete :Chained('object_with_id') :PathPart('delete') :Args(0)
-{
-    my ($self, $c) = @_;
+sub delete : Chained('object_with_id') : PathPart('delete') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->next::method($c);
 }
 
 
-sub update_bulk :Chained('objects_no_id') :PathPart('update') :Args(0)
-{
-    my ($self, $c) = @_;
+sub update_bulk : Chained('objects_no_id') : PathPart('update') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->update_or_create($c);
 }
 
 
-sub delete_bulk :Chained('objects_no_id') :PathPart('delete') :Args(0)
-{
-    my ($self, $c) = @_;
+sub delete_bulk : Chained('objects_no_id') : PathPart('delete') : Args(0) {
+    my ( $self, $c ) = @_;
     $self->delete($c);
 }
 
@@ -79,11 +70,12 @@ Catalyst::Controller::DBIC::API::RPC - Provides an RPC interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.004004
+version 2.005001
 
 =head1 DESCRIPTION
 
-Provides an RPC API interface to the functionality described in L<Catalyst::Controller::DBIC::API>.
+Provides an RPC API interface to the functionality described in
+L<Catalyst::Controller::DBIC::API>.
 
 By default provides the following endpoints:
 
@@ -103,7 +95,13 @@ Chained: override
 PathPart: override
 CaptureArgs: 0
 
-As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the chain root of the controller but has no pathpart or chain parent defined by default, so these must be defined in order for the controller to function. The neatest way is normally to define these using the controller's config.
+As described in L<Catalyst::Controller::DBIC::API/setup>, this action is the
+chain root of the controller but has no pathpart or chain parent defined by
+default.
+
+These must be defined in order for the controller to function.
+
+The neatest way is normally to define these using the controller's config.
 
   __PACKAGE__->config
     ( action => { setup => { PathPart => 'track', Chained => '/api/rpc/rpc_base' } },
@@ -116,7 +114,8 @@ Chained: L</objects_no_id>
 PathPart: create
 CaptureArgs: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create>.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/update_or_create>.
 
 =head2 list
 
@@ -124,7 +123,8 @@ Chained: L</deserialize>
 PathPart: list
 CaptureArgs: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/list>.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/list>.
 
 =head2 item
 
@@ -132,7 +132,8 @@ Chained: L</object_with_id>
 PathPart: ''
 Args: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/item>.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/item>.
 
 =head2 update
 
@@ -140,7 +141,8 @@ Chained: L</object_with_id>
 PathPart: update
 Args: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create>.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/update_or_create>.
 
 =head2 delete
 
@@ -148,7 +150,8 @@ Chained: L</object_with_id>
 PathPart: delete
 Args: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/delete>.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/delete>.
 
 =head2 update_bulk
 
@@ -156,7 +159,8 @@ Chained: L</objects_no_id>
 PathPart: update
 Args: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/update_or_create> for multiple objects.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/update_or_create> for multiple objects.
 
 =head2 delete_bulk
 
@@ -164,7 +168,8 @@ Chained: L</objects_no_id>
 PathPart: delete
 Args: 0
 
-Provides an endpoint to the functionality described in L<Catalyst::Controller::DBIC::API/delete> for multiple objects.
+Provides an endpoint to the functionality described in
+L<Catalyst::Controller::DBIC::API/delete> for multiple objects.
 
 =head1 AUTHORS
 
@@ -190,11 +195,15 @@ Florian Ragwitz <rafl@debian.org>
 
 Oleg Kostyuk <cub.uanic@gmail.com>
 
+=item *
+
+Samuel Kaufman <sam@socialflow.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2014 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

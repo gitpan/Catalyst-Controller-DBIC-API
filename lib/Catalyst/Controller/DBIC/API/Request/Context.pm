@@ -1,8 +1,5 @@
 package Catalyst::Controller::DBIC::API::Request::Context;
-{
-  $Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.004004';
-}
-
+$Catalyst::Controller::DBIC::API::Request::Context::VERSION = '2.005001';
 #ABSTRACT: Provides additional context to the Request
 use Moose::Role;
 use MooseX::Types::Moose(':all');
@@ -11,28 +8,25 @@ use Catalyst::Controller::DBIC::API::Types(':all');
 use namespace::autoclean;
 
 
-has objects =>
-(
-    is => 'ro',
-    isa => ArrayRef[ Tuple[ Object, Maybe[HashRef] ] ],
-    traits => [ 'Array' ],
+has objects => (
+    is     => 'ro',
+    isa    => ArrayRef[Tuple[Object,Maybe[HashRef]]],
+    traits => ['Array'],
     default => sub { [] },
-    handles =>
-    {
-        all_objects => 'elements',
-        add_object => 'push',
+    handles => {
+        all_objects   => 'elements',
+        add_object    => 'push',
         count_objects => 'count',
-        has_objects => 'count',
+        has_objects   => 'count',
         clear_objects => 'clear',
-        get_object => 'get',
+        get_object    => 'get',
     },
 );
 
 
-has current_result_set =>
-(
-    is => 'ro',
-    isa =>  ResultSet,
+has current_result_set => (
+    is     => 'ro',
+    isa    => ResultSet,
     writer => '_set_current_result_set',
 );
 
@@ -48,23 +42,25 @@ Catalyst::Controller::DBIC::API::Request::Context - Provides additional context 
 
 =head1 VERSION
 
-version 2.004004
+version 2.005001
 
 =head1 PUBLIC_ATTRIBUTES
 
-=head2 objects is: ro, isa ArrayRef[Tuple[Object,Maybe[HashRef]]], traits: ['Array']
+=head2 objects
 
-This attribute stores the objects found/created at the object action. It handles the following methods:
+This attribute stores the objects found/created at the object action.
+It handles the following methods:
 
-    all_objects => 'elements'
-    add_object => 'push'
+    all_objects   => 'elements'
+    add_object    => 'push'
     count_objects => 'count'
-    has_objects => 'count'
+    has_objects   => 'count'
     clear_objects => 'clear'
 
-=head2 current_result_set is: ro, isa: L<Catalyst::Controller::DBIC::API::Types/ResultSet>
+=head2 current_result_set
 
-Stores the current ResultSet derived from the initial L<Catalyst::Controller::DBIC::API::StoredResultSource/stored_model>.
+Stores the current ResultSet derived from the initial
+L<Catalyst::Controller::DBIC::API::StoredResultSource/stored_model>.
 
 =head1 AUTHORS
 
@@ -90,11 +86,15 @@ Florian Ragwitz <rafl@debian.org>
 
 Oleg Kostyuk <cub.uanic@gmail.com>
 
+=item *
+
+Samuel Kaufman <sam@socialflow.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2014 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

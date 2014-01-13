@@ -1,13 +1,13 @@
 package Catalyst::Controller::DBIC::API::Types;
-{
-  $Catalyst::Controller::DBIC::API::Types::VERSION = '2.004004';
-}
-
+$Catalyst::Controller::DBIC::API::Types::VERSION = '2.005001';
 #ABSTRACT: Provides shortcut types and coercions for DBIC::API
 use warnings;
 use strict;
 
-use MooseX::Types -declare => [qw/OrderedBy GroupedBy Prefetch SelectColumns AsAliases ResultSource ResultSet Model SearchParameters JoinBuilder/];
+use MooseX::Types -declare => [
+    qw( OrderedBy GroupedBy Prefetch SelectColumns AsAliases ResultSource
+        ResultSet Model SearchParameters JoinBuilder )
+];
 use MooseX::Types::Moose(':all');
 
 
@@ -40,7 +40,8 @@ subtype ResultSet, as class_type('DBIx::Class::ResultSet');
 subtype ResultSource, as class_type('DBIx::Class::ResultSource');
 
 
-subtype JoinBuilder, as class_type('Catalyst::Controller::DBIC::API::JoinBuilder');
+subtype JoinBuilder,
+    as class_type('Catalyst::Controller::DBIC::API::JoinBuilder');
 
 
 subtype Model, as class_type('DBIx::Class');
@@ -57,7 +58,7 @@ Catalyst::Controller::DBIC::API::Types - Provides shortcut types and coercions f
 
 =head1 VERSION
 
-version 2.004004
+version 2.005001
 
 =head1 TYPES
 
@@ -135,11 +136,15 @@ Florian Ragwitz <rafl@debian.org>
 
 Oleg Kostyuk <cub.uanic@gmail.com>
 
+=item *
+
+Samuel Kaufman <sam@socialflow.com>
+
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
+This software is copyright (c) 2014 by Luke Saunders, Nicholas Perez, Alexander Hartmaier, et al..
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

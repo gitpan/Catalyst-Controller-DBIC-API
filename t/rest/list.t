@@ -203,7 +203,9 @@ my $track_list_url           = "$base/api/rest/track";
     } $schema->resultset('Track')->search( undef, { page => 1, } )->all;
     is_deeply(
         $response,
-        { list => \@expected_response, success => 'true', totalcount => 15 },
+
+        # track does set use_json_boolean
+        { list => \@expected_response, success => JSON::true, totalcount => 15 },
         'correct data returned for static configured paging'
     );
 }
@@ -252,6 +254,8 @@ my $track_list_url           = "$base/api/rest/track";
         { join => { cds => 'tracks' }, } )->all;
     is_deeply(
         $response,
+
+        # artist doesn't set use_json_boolean
         { list => \@expected_response, success => 'true' },
         'correct data returned for search with sql function'
     );
