@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::Validator;
-$Catalyst::Controller::DBIC::API::Validator::VERSION = '2.005001';
+$Catalyst::Controller::DBIC::API::Validator::VERSION = '2.006001';
 #ABSTRACT: Provides validation services for inbound requests against whitelisted parameters
 use Moose;
 use Catalyst::Controller::DBIC::API::Validator::Visitor;
@@ -27,7 +27,7 @@ Catalyst::Controller::DBIC::API::Validator - Provides validation services for in
 
 =head1 VERSION
 
-version 2.005001
+version 2.006001
 
 =head1 AUTHORS
 

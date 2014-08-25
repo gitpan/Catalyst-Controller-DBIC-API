@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API;
-$Catalyst::Controller::DBIC::API::VERSION = '2.005001';
+$Catalyst::Controller::DBIC::API::VERSION = '2.006001';
 #ABSTRACT: Provides a DBIx::Class web service automagically
 use Moose;
 BEGIN { extends 'Catalyst::Controller'; }
@@ -697,7 +697,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.005001
+version 2.006001
 
 =head1 SYNOPSIS
 
@@ -1008,8 +1008,8 @@ This action is the chain root for all object level actions (such as delete and
 update) that operate on a single identifer. The provided identifier will be used
 to find that particular object and add it to the request's store ofobjects.
 
-Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the
-stored objects.
+Please see L<Catalyst::Controller::DBIC::API::Request::Context> for more
+details on the stored objects.
 
 =head2 objects_no_id
 
@@ -1023,8 +1023,8 @@ new object to be created. Otherwise, the values in the hash will be used to
 perform an update. As a special case, a single hash sent will be coerced into
 an array.
 
-Please see L<Catalyst::Controller::DBIC::API::Context> for more details on the
-stored objects.
+Please see L<Catalyst::Controller::DBIC::API::Request::Context> for more
+details on the stored objects.
 
 =head2 object_lookup
 
@@ -1311,11 +1311,14 @@ The validator is set in "loose" mode meaning only one path is required to match.
 For more information, please see L<Data::DPath::Validator> and more specifically
 L<Catalyst::Controller::DBIC::API::Validator>.
 
-Since 2.00100:
+Since 2.001:
 Transactions are used. The stash is put aside in favor of roles applied to the
 request object with additional accessors.
 Error handling is now much more consistent with most errors immediately detaching.
 The internals are much easier to read and understand with lots more documentation.
+
+Since 2.006:
+The SQL::Abstract -and, -not and -or operators are supported.
 
 =head1 AUTHORS
 

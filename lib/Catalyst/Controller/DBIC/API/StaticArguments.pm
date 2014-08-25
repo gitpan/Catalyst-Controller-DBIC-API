@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::StaticArguments;
-$Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.005001';
+$Catalyst::Controller::DBIC::API::StaticArguments::VERSION = '2.006001';
 #ABSTRACT: Provides controller level configuration arguments
 use Moose::Role;
 use MooseX::Types::Moose(':all');
@@ -145,7 +145,7 @@ Catalyst::Controller::DBIC::API::StaticArguments - Provides controller level con
 
 =head1 VERSION
 
-version 2.005001
+version 2.006001
 
 =head1 DESCRIPTION
 
