@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::RequestArguments;
-$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.006001';
+$Catalyst::Controller::DBIC::API::RequestArguments::VERSION = '2.006002';
 #ABSTRACT: Provides Request argument validation
 use MooseX::Role::Parameterized;
 use Catalyst::Controller::DBIC::API::Types(':all');
@@ -486,7 +486,7 @@ Catalyst::Controller::DBIC::API::RequestArguments - Provides Request argument va
 
 =head1 VERSION
 
-version 2.006001
+version 2.006002
 
 =head1 DESCRIPTION
 

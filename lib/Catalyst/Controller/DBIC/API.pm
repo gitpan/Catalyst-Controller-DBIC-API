@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API;
-$Catalyst::Controller::DBIC::API::VERSION = '2.006001';
+$Catalyst::Controller::DBIC::API::VERSION = '2.006002';
 #ABSTRACT: Provides a DBIx::Class web service automagically
 use Moose;
 BEGIN { extends 'Catalyst::Controller'; }
@@ -697,7 +697,7 @@ Catalyst::Controller::DBIC::API - Provides a DBIx::Class web service automagical
 
 =head1 VERSION
 
-version 2.006001
+version 2.006002
 
 =head1 SYNOPSIS
 

@@ -53,6 +53,7 @@
       },
       "test" : {
          "requires" : {
+            "Data::Printer" : "0.35",
             "Test::Deep" : "0.104",
             "Test::More" : "0.88",
             "Test::WWW::Mechanize::Catalyst" : "0.37"
@@ -67,7 +68,7 @@
          "web" : "http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=catagits/Catalyst-Controller-DBIC-API.git"
       }
    },
-   "version" : "2.006001",
+   "version" : "2.006002",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.020000"

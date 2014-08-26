@@ -1,5 +1,5 @@
 package Catalyst::Controller::DBIC::API::REST;
-$Catalyst::Controller::DBIC::API::REST::VERSION = '2.006001';
+$Catalyst::Controller::DBIC::API::REST::VERSION = '2.006002';
 #ABSTRACT: Provides a REST interface to DBIx::Class
 use Moose;
 BEGIN { extends 'Catalyst::Controller::DBIC::API'; }
@@ -65,7 +65,7 @@ Catalyst::Controller::DBIC::API::REST - Provides a REST interface to DBIx::Class
 
 =head1 VERSION
 
-version 2.006001
+version 2.006002
 
 =head1 DESCRIPTION
 

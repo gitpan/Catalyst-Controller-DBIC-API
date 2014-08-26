@@ -8,6 +8,7 @@ author:
   - 'Oleg Kostyuk <cub.uanic@gmail.com>'
   - 'Samuel Kaufman <sam@socialflow.com>'
 build_requires:
+  Data::Printer: '0.35'
   Test::Deep: '0.104'
   Test::More: '0.88'
   Test::WWW::Mechanize::Catalyst: '0.37'
@@ -35,7 +36,7 @@ requires:
   perl: '5.008006'
 resources:
   repository: git://git.shadowcat.co.uk/catagits/Catalyst-Controller-DBIC-API
-version: '2.006001'
+version: '2.006002'
 x_Dist_Zilla:
   perl:
     version: '5.020000'
